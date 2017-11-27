@@ -1,3 +1,1 @@
-module Elektron
-  # Your code goes here...
-end
+require_relative 'elektron/auth_session'
