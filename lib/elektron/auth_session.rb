@@ -1,51 +1,47 @@
-require_relative './auth'
+require_relative './authentication'
+require_relative './service'
+require_relative './utils'
 
 module Elektron
-  def self.with_indifferent_access(hash)
-    hash.each_with_object({}) { |(k, v), new_hash| new_hash[k.to_sym] = v }
-  end
-
-  def self.deep_merge(hash1, hash2)
-    hash2.each_pair do |current_key, value2|
-      value1 = hash1[current_key]
-
-      hash1[current_key] = if value1.is_a?(Hash) && value2.is_a?(Hash)
-                             deep_merge(value1, value2)
-                           else
-                             value2
-                           end
-    end
-    hash1
-  end
-
   # Entry point
   class AuthSession
-    attr_reader :token_context
+    include Utils
+    extend Forwardable
+    def_delegators :token_context, :is_admin_project?, :user_id, :user_name,
+                   :user_description, :user_domain_id, :user_domain_name,
+                   :domain_id, :domain_name, :project_id, :project_name,
+                   :project_parent_id, :project_domain_id, :project_domain_name,
+                   :expires_at, :expired?, :issued_at, :service_catalog,
+                   :service?, :roles, :role_names, :has_role?, :service_url,
+                   :available_services_regions, :token
 
     DEFAULT_OPTIONS = {
+      # version: 'V3',
       headers: {},
-      default_interface: 'public'
+      interface: 'internal',
+      client: {},
+      debug: false
     }.freeze
 
     def initialize(auth_conf, options)
-      @auth_conf = Elektron.with_indifferent_access(auth_conf)
-      @options = Elektron.deep_merge(
-        {}.merge(DEFAULT_OPTIONS),
-        Elektron.with_indifferent_access(options)
+      @auth_conf = with_indifferent_access(auth_conf)
+      @options = deep_merge(
+        {}.merge(DEFAULT_OPTIONS), with_indifferent_access(options)
+      )
+      @services = {}
+    end
+
+    def token_context
+      return @token_context if @token_context && !@token_context.expired?
+      @token_context = Elektron::Authentication.token_context(
+        @auth_conf, @options
       )
     end
 
-    def authenticate
-      @token_context = Elektron::Auth.token_context(@auth_conf, @options)
-    end
-
-    def token
-      authenticate if @token_context.expired?
-      @token_context.token
-    end
-
     def service(name, options = {})
-      Service.new(name, self, Elektron.deep_merge(@options, options))
+      @services[name] ||= Service.new(
+        name, self, {}.merge(@options).merge(options)
+      )
     end
   end
 end

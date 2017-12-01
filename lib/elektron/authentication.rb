@@ -5,7 +5,7 @@ require_relative './token_context'
 
 module Elektron
   # Abstract class
-  class Auth
+  class Authentication
     attr_reader :token_context, :token
 
     VERSIONS = %w[V2 V3].freeze
@@ -22,6 +22,9 @@ module Elektron
     end
 
     def self.token_context(auth_conf, options)
+      if auth_conf[:token_context] && auth_conf[:token]
+        return TokenContext.new(auth_conf[:token_context], auth_conf[:token])
+      end
       version = version(auth_conf, options)
       raise UnknownIdentityVersion unless version
       klass = Object.const_get("Elektron::Auth::#{version}")

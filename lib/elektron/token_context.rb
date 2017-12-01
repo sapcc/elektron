@@ -1,7 +1,11 @@
+require 'date'
+
 module Elektron
   class TokenContext
+    attr_reader :context
+    
     def initialize(context, value)
-      @context = context
+      @context = context['token'].nil? ? context : context['token']
       @value = value
     end
 
@@ -70,24 +74,24 @@ module Elektron
     end
 
     def expires_at
-      @token_expires_at ||= DateTime.parse(@context['expires_at'])
+      @token_expires_at ||= DateTime.parse(@context['expires_at']).to_time
     end
 
     def expired?
-      token_expires_at < Time.now
+      expires_at < Time.now
     end
 
     def issued_at
-      @token_issued_at ||= DateTime.parse(@context['issued_at'])
+      @token_issued_at ||= DateTime.parse(@context['issued_at']).to_time
     end
 
     def service_catalog
       @service_catalog ||= (@context['catalog'] || @context['serviceCatalog'] || [])
     end
 
-    def has_service?(type)
-      service_catalog.each { |service| return true if service['type'] == type }
-      false
+    def service?(type)
+      services = service_catalog.select { |service| service['type'] == type }
+      !services.empty?
     end
 
     def roles
@@ -107,14 +111,14 @@ module Elektron
       region = options[:region] || default_services_region
       interface = options[:interface] || 'public'
 
-      service = service_catalog.find do |service|
-        service['type']==type.to_s
+      service = service_catalog.find do |s|
+        s['type'] == type.to_s || s['name'] == type.to_s
       end
 
       return nil unless service
 
-      endpoint = service['endpoints'].find do |endpoint|
-        endpoint['region_id']==region.to_s and endpoint['interface']==interface.to_s
+      endpoint = service['endpoints'].find do |e|
+        e['region_id'] == region.to_s && e['interface'] == interface.to_s
       end
 
       return nil unless endpoint
