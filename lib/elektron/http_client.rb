@@ -68,29 +68,38 @@ module Elektron
 
     ############ REQUESTS ############
     # DELETE
-    def delete(path)
-      request = Net::HTTP::Delete.new(path, @headers)
+    def delete(path, headers = {})
+      headers = {}.merge(@headers).merge(headers)
+      request = Net::HTTP::Delete.new(path, headers)
       perform(request)
     end
 
     # GET
-    def get(path, params = {})
-      perform(Net::HTTP::Get.new(to_url(path, params), @headers))
+    def get(path, *args)
+      params = args.length > 0 ? args[0] : {}
+      headers = args.length > 1 ? args[1] : {}
+      headers = {}.merge(@headers).merge(headers)
+      perform(Net::HTTP::Get.new(to_url(path, params), headers))
     end
 
     # HEAD
-    def head(path)
-      perform(Net::HTTP::Head.new(path, @headers))
+    def head(path, headers)
+      headers = {}.merge(@headers).merge(headers)
+      perform(Net::HTTP::Head.new(path, headers))
     end
 
     # OPTIONS
-    def options(path)
-      perform(Net::HTTP::Options.new(path, @headers))
+    def options(path, headers)
+      headers = {}.merge(@headers).merge(headers)
+      perform(Net::HTTP::Options.new(path, headers))
     end
 
     # PATCH
-    def patch(path, data = {})
-      request = Net::HTTP::Patch.new(path, @headers)
+    def patch(path, *args)
+      data = args.length > 0 ? args[0] : {}
+      headers = args.length > 1 ? args[1] : {}
+      headers = {}.merge(@headers).merge(headers)
+      request = Net::HTTP::Patch.new(path, headers)
       request.content_type = CONTENT_TYPE_JSON
       if data && !data.empty?
         request.body = json?(data) ? data : JSON.generate(data)
@@ -99,8 +108,12 @@ module Elektron
     end
 
     # POST
-    def post(path, data = {})
-      request = Net::HTTP::Post.new(path, @headers)
+    def post(path, *args)
+      data = args.length > 0 ? args[0] : {}
+      headers = args.length > 1 ? args[1] : {}
+      headers = {}.merge(@headers).merge(headers)
+
+      request = Net::HTTP::Post.new(path, headers)
 
       request.content_type = CONTENT_TYPE_JSON
       if data && !data.empty?
@@ -110,8 +123,12 @@ module Elektron
     end
 
     # PUT
-    def put(path, data = {})
-      request = Net::HTTP::Put.new(path, @headers)
+    def put(path, *args)
+      data = args.length > 0 ? args[0] : {}
+      headers = args.length > 1 ? args[1] : {}
+      headers = {}.merge(@headers).merge(headers)
+
+      request = Net::HTTP::Put.new(path, headers)
       request.content_type = CONTENT_TYPE_JSON
       if data && !data.empty?
         request.body = json?(data) ? data : JSON.generate(data)

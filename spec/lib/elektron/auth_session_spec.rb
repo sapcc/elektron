@@ -26,7 +26,7 @@ describe Elektron::AuthSession do
     compute = auth_session.service('compute', path_prefix: '/v2')
 
     it 'should list all servers' do
-      p compute.get('/servers').map_to('body.servers' => OpenStruct)
+      p compute.get('/:project_id/servers').map_to('body.servers' => OpenStruct)
     end
 
     it "should create a server" do

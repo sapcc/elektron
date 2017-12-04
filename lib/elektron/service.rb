@@ -64,36 +64,53 @@ module Elektron
       )
     end
 
-    def get(path, params = {})
-      handle_response http_client.get(full_path(path, params))
+    def get(path, *args)
+      params, headers = get_params_and_headers(args)
+      handle_response http_client.get(full_path(path, params), headers)
     end
 
-    def post(path, params = {})
+    def post(path, *args)
+      params, headers = get_params_and_headers(args)
       data = yield if block_given?
-      handle_response http_client.post(full_path(path, params), data)
+      handle_response http_client.post(full_path(path, params), data, headers)
     end
 
-    def put(path, params = {}, &block)
-      data = block.call() if block?
-      handle_response http_client.put(full_path(path, params), data)
+    def put(path, *args)
+      params, headers = get_params_and_headers(args)
+      data = yield if block_given?
+      handle_response http_client.put(full_path(path, params), data, headers)
     end
 
-    def patch(path, params = {}, &block)
-      data = block.call() if block?
-      handle_response http_client.patch(full_path(path, params), data)
+    def patch(path, *args)
+      params, headers = get_params_and_headers(args)
+      data = yield if block_given?
+      handle_response http_client.patch(full_path(path, params), data, headers)
     end
 
-    def delete(path, params = {})
-      handle_response http_client.delete(full_path(path, params))
+    def delete(path, *args)
+      params, headers = get_params_and_headers(args)
+      handle_response http_client.delete(full_path(path, params), headers)
     end
 
     private
 
+    def get_params_and_headers(args)
+      params = args.length > 0 ? args[0] : {}
+      headers = args.length > 1 ? args[1] : {}
+      [params, headers]
+    end
+
     def full_path(path, params = {})
-      if @path_prefix
-        path = join_path_parts(@path_prefix, path)
-      end
-      to_url(path, params)
+      path = join_path_parts(@path_prefix, path) if @path_prefix
+      p ">>>>>>>>>>>>>>>>>>>>>>>>>>"
+      p path
+      p params
+      p @auth_session.project_id
+      p to_url(path, params).gsub(/:project_id/, @auth_session.project_id)
+      url = to_url(path, params).gsub(/:project_id/, @auth_session.project_id)
+                          .gsub(/:tenant_id/, @auth_session.project_id)
+      p url
+      url
     end
 
     def http_client
