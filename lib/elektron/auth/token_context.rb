@@ -1,20 +1,15 @@
 require 'date'
 
 module Elektron
-  class TokenContext
+  module TokenContext
     attr_reader :context
-    
-    def initialize(context, value)
-      @context = context['token'].nil? ? context : context['token']
-      @value = value
-    end
 
-    def token
-      @value
+    def current_context(context)
+      @context = context['token'].nil? ? context : context['token']
     end
 
     def is_admin_project?
-      @is_admin_project ||= read_value('is_admin_project')
+      @is_admin_project ||= read_value('is_admin_project') || false
     end
 
     def user_id
@@ -85,12 +80,14 @@ module Elektron
       @token_issued_at ||= DateTime.parse(@context['issued_at']).to_time
     end
 
-    def service_catalog
-      @service_catalog ||= (@context['catalog'] || @context['serviceCatalog'] || [])
+    def catalog
+      @catalog ||= (@context['catalog'] || @context['serviceCatalog'] || [])
     end
 
     def service?(type)
-      services = service_catalog.select { |service| service['type'] == type }
+      services = catalog.select do |service|
+        service['type'] == type || service['name'] == type
+      end
       !services.empty?
     end
 
@@ -108,10 +105,10 @@ module Elektron
     end
 
     def service_url(type, options={})
-      region = options[:region] || default_services_region
+      region = options[:region] || available_services_regions.first
       interface = options[:interface] || 'public'
 
-      service = service_catalog.find do |s|
+      service = catalog.find do |s|
         s['type'] == type.to_s || s['name'] == type.to_s
       end
 
@@ -130,7 +127,7 @@ module Elektron
     def available_services_regions
       unless @regions
         @regions = []
-        service_catalog.each do |service|
+        catalog.each do |service|
           next if service['type']=='identity'
           (service['endpoints'] || []).each do |endpoint|
             @regions << endpoint['region']

@@ -4,8 +4,8 @@ module Elektron
   module Auth
     class V3
       attr_reader :context, :token_value
-      
-      def initialize(auth_conf, options)
+
+      def initialize(auth_conf, options = {})
         @auth_conf = auth_conf
         @options = options
         @client = Elektron::HttpClient.new(auth_conf[:url], @options)
@@ -16,7 +16,6 @@ module Elektron
 
       def user
         user = {
-          'name' => @auth_conf[:user_name],
           'domain' => {},
           'password' => @auth_conf[:password]
         }
@@ -37,19 +36,25 @@ module Elektron
 
       def scope
         scope = {}
-        if @auth_conf[:project_id]
-          scope['project'] = { 'id' => @auth_conf[:project_id]}
-        elsif @auth_conf[:project_name]
-          scope['project'] = { 'name' => @auth_conf[:project_name] }
-          if @auth_conf[:project_domain_name]
-            scope['project']['domain'] = {'name' => @auth_conf[:project_domain_name] }
-          elsif @auth_conf[:project_domain_id]
-            scope['project']['domain'] = {'id' => @auth_conf[:project_domain_id] }
+        if @auth_conf[:scope_project_id]
+          scope['project'] = { 'id' => @auth_conf[:scope_project_id] }
+        elsif @auth_conf[:scope_project_name]
+          scope['project'] = { 'name' => @auth_conf[:scope_project_name] }
+          if @auth_conf[:scope_project_domain_name]
+            scope['project']['domain'] = {
+              'name' => @auth_conf[:scope_project_domain_name]
+            }
+          elsif @auth_conf[:scope_project_domain_id]
+            scope['project']['domain'] = {
+              'id' => @auth_conf[:scope_project_domain_id]
+            }
           end
-        elsif @auth_conf[:domain_name]
-          scope['domain'] = { 'name' => @auth_conf[:domain_name]}
-        elsif @auth_conf[:domain_id]
-          scope['domain'] = { 'id' => @auth_conf[:domain_id]}
+        elsif @auth_conf[:scope_domain_name]
+          scope['domain'] = { 'name' => @auth_conf[:scope_domain_name] }
+        elsif @auth_conf[:scope_domain_id]
+          scope['domain'] = { 'id' => @auth_conf[:scope_domain_id] }
+        elsif @auth_conf[:unscoped]
+          scope = 'unscoped'
         end
         scope
       end
@@ -70,12 +75,10 @@ module Elektron
                    end
 
         auth = {
-          'identity' => identity,
+          'identity' => identity
         }
         s = scope
-        if s.length.positive?
-          auth['scope'] = scope
-        end
+        s.length.positive? && auth['scope'] = scope
         { 'auth' => auth }
       end
     end

@@ -1,8 +1,8 @@
 require 'uri'
 require 'json'
 require 'net/http'
-require_relative './uri_helper'
-require_relative './api_error'
+require_relative './utils/uri_helper'
+require_relative './errors/api_response'
 
 module Elektron
   # http client
@@ -22,10 +22,11 @@ module Elektron
     def initialize(url, options = {})
       uri = URI.parse(url)
       options = options.clone
-      @headers = options.delete(:headers)
+      @headers = options.delete(:headers) || {}
       @connection = Net::HTTP.new(uri.host, uri.port, :ENV)
 
       http_options = {}.merge(DEFAULT_OPTIONS)
+
       if uri.scheme == 'https'
         http_options[:use_ssl] = true
         if options.fetch(:verify_ssl, true) == false
@@ -34,7 +35,6 @@ module Elektron
       end
 
       http_options.merge!(options[:client]) if options[:client]
-
       # set attributes
       http_options.each { |key, value| @connection.send("#{key}=", value) }
 
@@ -83,13 +83,13 @@ module Elektron
     end
 
     # HEAD
-    def head(path, headers)
+    def head(path, headers = {})
       headers = {}.merge(@headers).merge(headers)
       perform(Net::HTTP::Head.new(path, headers))
     end
 
     # OPTIONS
-    def options(path, headers)
+    def options(path, headers = {})
       headers = {}.merge(@headers).merge(headers)
       perform(Net::HTTP::Options.new(path, headers))
     end
@@ -114,7 +114,6 @@ module Elektron
       headers = {}.merge(@headers).merge(headers)
 
       request = Net::HTTP::Post.new(path, headers)
-
       request.content_type = CONTENT_TYPE_JSON
       if data && !data.empty?
         request.body = json?(data) ? data : JSON.generate(data)
@@ -156,7 +155,7 @@ module Elektron
       #   Simpler than trying to detect every possible exception.
       parse(response.value || response)
     rescue Net::ProtoServerError => e
-      raise ::Elektron::ApiError, e.response
+      raise ::Elektron::Errors::ApiResponse, e.response
     end
 
     def parse(response)

@@ -1,92 +1,98 @@
-
-
 describe Elektron::AuthSession do
-  it 'auth v3' do
-    auth_session = Elektron::AuthSession.new({
-      url: 'https://identity-3.staging.cloud.sap/v3',
-      user_name: 'dashboard',
-      user_domain_name: 'Default',
-      password: 'mugs55;Maxus',
-      domain_name: 'monsoon3'
-    }, {region: 'staging', debug: false})
-    domain_id = auth_session.token_context.domain_id
-    identity = auth_session.service('identity', path_prefix: '/v3', interface: 'public')
-    p identity.get('users', {domain_id: domain_id}).map_to('body.users' => OpenStruct)
+  auth_conf = {
+    user_name: 'test',
+    password: 'test',
+    user_domain_name: 'Default'
+  }
+
+  before :each do
+    auth = double('auth V3').as_null_object
+    allow(auth).to receive(:context).and_return(ScopedTokenContext.context)
+    allow(auth).to receive(:token_value).and_return(ScopedTokenContext.token)
+    allow(Elektron::Auth::V3).to receive(:new).and_return(auth)
   end
 
-  context 'compute service' do
-    auth_session = Elektron::AuthSession.new({
-      url: 'https://identity-3.staging.cloud.sap/v3',
-      user_name: 'D064310',
-      user_domain_name: 'monsoon3',
-      password: 'Ap302112018',
-      project_id: '2fbf16e217d74cec805a4f476b2bc306'
-    }, {region: 'staging', debug: true, interface: 'public'})
-
-    compute = auth_session.service('compute', path_prefix: '/v2')
-
-    it 'should list all servers' do
-      p compute.get('/:project_id/servers').map_to('body.servers' => OpenStruct)
-    end
-
-    it "should create a server" do
-      compute.post('/servers') do
-        {
-          'server' => {
-            'name' => 'new-server-test2',
-            'imageRef' => '8a7b7785-92df-4168-95c0-85e7b8f1db1a',
-            'flavorRef' => '30',
-            'availability_zone' => 'stagingb',
-            'OS-DCF:diskConfig' => 'AUTO',
-            'metadata' => {
-              'My Server Name' => 'Apache1'
-            },
-            'security_groups' => [
-              {
-                'name' => 'default'
-              }
-            ],
-            'networks' => [{
-              'uuid' => '4d622609-2020-4b43-9159-7c238feb0b84'
-            }]
-          }
-        }
+  describe '::version' do
+    context 'version is given via options' do
+      it 'should return V2' do
+        expect(Elektron::AuthSession.version(auth_conf, version: 'v2')).to eq('V2')
       end
-    end
 
-    it 'should delete a server' do
-      compute.delete("/servers/5342fcd3-1c64-4a97-b0bd-4babdaa4e86c")
-    end
-
-    it 'should stop a server' do
-      compute.post("/servers/9727689b-884a-4f21-b006-c518ce870176/action") do
-        { "os-stop" => nil }
+      it 'should accept a symbol' do
+        expect(Elektron::AuthSession.version(auth_conf, version: :v2)).to eq('V2')
       end
-    end
 
-    it 'should start a server' do
-      compute.post("/servers/9727689b-884a-4f21-b006-c518ce870176/action") do
-        { "os-start" => nil }
+      it 'should return V3' do
+        expect(Elektron::AuthSession.version(auth_conf, version: 'v3')).to eq('V3')
+      end
+
+      it 'should return default version' do
+        expect(Elektron::AuthSession.version(auth_conf, version: 'v4')).to eq('V3')
       end
     end
   end
 
-  context 'create auth_session from existing one' do
-    auth_session = Elektron::AuthSession.new({
-      url: 'https://identity-3.staging.cloud.sap/v3',
-      user_name: 'dashboard',
-      user_domain_name: 'Default',
-      password: 'mugs55;Maxus',
-      domain_name: 'monsoon3'
-    }, {region: 'staging', debug: false})
+  describe '#new' do
+    it 'should create a new instance by given token data' do
+      expect(Elektron::Auth::V3).not_to receive(:new)
+      auth_session = Elektron::AuthSession.new(
+        {token_context: {}, token: 'test'}, version: :v3
+      )
+    end
 
-    it 'should create a new auth session' do
-      new_auth_session = Elektron::AuthSession.new({
-        token_context: auth_session.token_context.context,
-        token: auth_session.token
-      },{region: 'staging', debug: true, interface: 'public'})
+    it 'should create a new instance by given auth_conf' do
+      expect(Elektron::Auth::V3).to receive(:new)
+      Elektron::AuthSession.new(auth_conf, version: :v3)
+    end
+  end
 
-      p new_auth_session.service('identity', path_prefix: '/v3').get('auth/projects').data
+  let(:auth_session) { Elektron::AuthSession.new(auth_conf) }
+  let(:context) { auth_session.instance_variable_get(:@context) }
+
+  describe '#expired?' do
+    it 'should return true' do
+      expect(auth_session.expired?).to eq(true)
+    end
+
+    it 'should return false' do
+      context['expires_at'] = (Time.now+10).to_s
+      expect(auth_session.expired?).to eq(false)
+    end
+  end
+
+  describe '#token' do
+    it 'should call enforce_valid_token' do
+      expect(auth_session).to receive(:enforce_valid_token).and_call_original
+      auth_session.token
+    end
+
+    it 'returns current token value' do
+      expect(auth_session.token).to eq(ScopedTokenContext.token)
+    end
+
+    it 'reautheticates on expired token' do
+      expect(auth_session).to receive(:authenticate).and_call_original
+      auth_session.token
+    end
+
+    it 'do not reautheticate on valid token' do
+      context['expires_at'] = (Time.now+10).to_s
+      expect(auth_session).not_to receive(:authenticate).and_call_original
+      auth_session.token
+    end
+  end
+
+  # describe '#catalog' do
+  #   it 'should call enforce_valid_token' do
+  #     expect(auth_session).to receive(:enforce_valid_token).and_call_original
+  #     auth_session.catalog
+  #   end
+  # end
+
+  describe '#user_id' do
+    it 'should not call enforce_valid_token' do
+      expect(auth_session).not_to receive(:enforce_valid_token).and_call_original
+      auth_session.user_id
     end
   end
 end

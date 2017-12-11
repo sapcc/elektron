@@ -1,11 +1,24 @@
 describe Elektron::Auth::V3 do
+  before :each do
+    response = double('response').as_null_object
+    allow(response).to receive(:body).and_return(ScopedTokenContext.context)
+    allow(response).to receive(:[]).with(
+      'x-subject-token'
+    ).and_return(ScopedTokenContext.token)
+
+    client = double('client').as_null_object
+    allow(client).to receive(:post).with('/v3/auth/tokens', anything)
+                                   .and_return(response)
+    allow(Elektron::HttpClient).to receive(:new).and_return(client)
+  end
+
   shared_examples 'authentication' do |auth_conf, auth_params|
     it 'should create an auth object' do
       expect(Elektron::Auth::V3.new(auth_conf)).not_to be(nil)
     end
 
     it 'should call identity api with auth params' do
-      expect(Elektron::Auth:V3.auth_params(auth_conf)).to eq(auth_params)
+      expect(Elektron::Auth::V3.new(auth_conf).credentials).to eq(auth_params)
     end
   end
 
@@ -36,8 +49,30 @@ describe Elektron::Auth::V3 do
           }
         }
       }
-      include_examples 'authentication', auth_conf, auth_params
+      it_behaves_like 'authentication', auth_conf, auth_params
     end
+
+    context 'Token authentication' do
+      context 'user name and domain name are used' do
+        auth_conf = {
+          url: 'https://keystone.api.com',
+          token: 'TOKEN'
+        }
+
+        auth_params = {
+          'auth' => {
+            'identity' => {
+              'methods' => [
+                'token'
+              ],
+              'token' => {
+                'id' => 'TOKEN'
+              }
+            }
+          }
+        }
+        it_behaves_like 'authentication', auth_conf, auth_params
+      end
 
     context 'user name and domain id are used' do
       auth_conf = {
@@ -64,12 +99,12 @@ describe Elektron::Auth::V3 do
           }
         }
       }
-      include_examples 'authentication', auth_conf, auth_params
+      it_behaves_like 'authentication', auth_conf, auth_params
     end
 
     context 'user id and domain id are used' do
       auth_conf = {
-        user_name: 'ee4dfb6e5540447cb3741905149d9b6e',
+        user_id: 'ee4dfb6e5540447cb3741905149d9b6e',
         password: 'devstacker',
         user_domain_id: 'default'
       }
@@ -92,7 +127,7 @@ describe Elektron::Auth::V3 do
           }
         }
       }
-      include_examples 'authentication', auth_conf, auth_params
+      it_behaves_like 'authentication', auth_conf, auth_params
     end
   end
 
@@ -125,7 +160,7 @@ describe Elektron::Auth::V3 do
           }
         }
       }
-      include_examples 'authentication', auth_conf, auth_params
+      it_behaves_like 'authentication', auth_conf, auth_params
     end
 
     context 'user id and scope domain name and project name are given' do
@@ -133,7 +168,7 @@ describe Elektron::Auth::V3 do
         user_id: 'ee4dfb6e5540447cb3741905149d9b6e',
         password: 'devstacker',
         user_domain_id: 'default',
-        scope_domain_name: 'Default',
+        scope_project_domain_name: 'Default',
         scope_project_name: 'Test'
       }
       auth_params = {
@@ -144,21 +179,21 @@ describe Elektron::Auth::V3 do
             ],
             'password' => {
               'user' => {
-                'id' => 'ee4dfb6e5540447cb3741905149d9b6e',
                 'domain' => { 'id' => 'default'},
-                'password' => 'devstacker'
+                'password' => 'devstacker',
+                'id' => 'ee4dfb6e5540447cb3741905149d9b6e'
               }
             }
           },
           'scope' => {
             'project' => {
               'name' => 'Test',
-              'domain' => { 'id' => 'default' }
+              'domain' => { 'name' => 'Default' }
             }
           }
         }
       }
-      include_examples 'authentication', auth_conf, auth_params
+      it_behaves_like 'authentication', auth_conf, auth_params
     end
   end
 
@@ -177,14 +212,17 @@ describe Elektron::Auth::V3 do
           'password' => {
             'user' => {
               'id' => 'ee4dfb6e5540447cb3741905149d9b6e',
-              'password' => 'devstacker'
+              'password' => 'devstacker',
+              'domain' => {
+                'id' => nil
+              }
             }
           }
         },
         'scope' => 'unscoped'
       }
     }
-    include_examples 'authentication', auth_conf, auth_params
+    it_behaves_like 'authentication', auth_conf, auth_params
   end
 
   context 'Token authentication with unscoped authorization' do
@@ -203,7 +241,7 @@ describe Elektron::Auth::V3 do
         }
       }
     }
-    include_examples 'authentication', auth_conf, auth_params
+    it_behaves_like 'authentication', auth_conf, auth_params
   end
 
   context 'Token authentication with scoped authorization' do
@@ -228,7 +266,7 @@ describe Elektron::Auth::V3 do
         }
       }
     }
-    include_examples 'authentication', auth_conf, auth_params
+    it_behaves_like 'authentication', auth_conf, auth_params
   end
 
   context 'Token authentication with explicit unscoped authorization' do
@@ -249,6 +287,6 @@ describe Elektron::Auth::V3 do
         'scope' => 'unscoped'
       }
     }
-    include_examples 'authentication', auth
+    it_behaves_like 'authentication', auth_conf, auth_params
   end
 end
