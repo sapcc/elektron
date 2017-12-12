@@ -446,22 +446,6 @@ describe Elektron::Service do
       service.get('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'})
     end
 
-    it 'should use params and microversion' do
-      expect(@http_client).to receive(:get) do |path, headers|
-        expect(path).to eq('/shares/detail?limit=10')
-        expect(headers).to eq({'X-OpenStack-Nova-API-Version' => 2.15})
-      end.and_return(double('response').as_null_object)
-      service.get('/shares/detail', {limit: 10}, { microversion: 2.15 })
-    end
-
-    it 'should use microversion' do
-      expect(@http_client).to receive(:get) do |path, headers|
-        expect(path).to eq('/test')
-        expect(headers).to eq({'X-OpenStack-Nova-API-Version' => 2.15})
-      end.and_return(double('response').as_null_object)
-      service.get('/test', {}, microversion: 2.15)
-    end
-
     context 'path starts with / and path_prefix is nil' do
       it 'should use path as full path' do
         expect(@http_client).to receive(:get) do |path, headers|

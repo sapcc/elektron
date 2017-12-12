@@ -51,8 +51,6 @@ module Elektron
       @auth_session = auth_session
       @options = options
       @options[:headers] ||= {}
-      microversion = microversion_header(@options.delete(:microversion))
-      @options[:headers].merge(microversion) if microversion
       @path_prefix = @options.delete(:path_prefix)
     end
 
@@ -106,9 +104,6 @@ module Elektron
       region = options.delete(:region) || params.delete(:region)
       interface = options.delete(:interface) || params.delete(:interface)
       service_url = endpoint_url(region: region, interface: interface)
-
-      microversion = options.delete(:microversion)
-      headers.merge!(microversion_header(microversion)) if microversion
       path = full_path(service_url, path, params, path_prefix)
 
       handle_response do
@@ -120,16 +115,6 @@ module Elektron
           http_client(service_url).send(
             method, path, headers
           )
-        end
-      end
-    end
-
-    def microversion_header(microversion)
-      if microversion
-        if microversion.to_f >= 2.27
-          return { 'OpenStack-API-Version' => "#{@name} #{microversion}" }
-        else
-          return { 'X-OpenStack-Nova-API-Version' => microversion }
         end
       end
     end

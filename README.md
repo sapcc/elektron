@@ -119,7 +119,7 @@ These options are valid only within the service (service options).
 
 `service.HTTP_METHOD(PATH, parameters = {}, options = {}, &block)`
 * parameters: are url parameters. Example: path = 'auth/projects' and parameters are { name: 'test' } results in `'/auth/projects?name=test'`
-* options: `path_prefix`, `:region`, `:interface`, `headers` and `microvirsion`  
+* options: `path_prefix`, `:region`, `:interface` and `headers`  
   These options are valid only within the request (request options).
 
 **IMPORTANT** if path contains a `:project_id`or `:tenant_id` so it is mapped
