@@ -18,8 +18,12 @@ module Elektron
 
       # This method is used to map raw data to a Object.
       def map_to(key_class_map, options = {})
-        key = key_class_map.keys.first
-        klass = key_class_map.values.first
+        key = key_class_map
+        klass = nil
+        if key_class_map.is_a?(Hash)
+          key = key_class_map.keys.first
+          klass = key_class_map.values.first
+        end
 
         key_tokens = key.split('.')
         key_tokens.shift if key_tokens[0] == 'body'
@@ -28,10 +32,12 @@ module Elektron
 
         if data.is_a?(Array)
           data.collect do |item|
-            klass.new(item.merge(options))
+            params = item.merge(options)
+            block_given? ? yield(params) : klass.new(params)
           end
         elsif data.is_a?(Hash)
-          klass.new(data.merge(options))
+          params = data.merge(options)
+          block_given? ? yield(params) : klass.new(params)
         else
           data
         end
@@ -96,20 +102,23 @@ module Elektron
       # so check both options and params
       path_prefix = options.delete(:path_prefix) || params.delete(:path_prefix)
       headers = options.delete(:headers) || params.delete(:headers) || {}
+
       region = options.delete(:region) || params.delete(:region)
       interface = options.delete(:interface) || params.delete(:interface)
+      service_url = endpoint_url(region: region, interface: interface)
 
       microversion = options.delete(:microversion)
       headers.megre(microversion_header(microversion)) if microversion
-      path = full_path(path, params, path_prefix)
+
+      path = full_path(service_url, path, params, path_prefix)
 
       handle_response do
         if data
-          http_client(region: region, interface: interface).send(
+          http_client(service_url).send(
             method, path, data, headers
           )
         else
-          http_client(region: region, interface: interface).send(
+          http_client(service_url).send(
             method, path, headers
           )
         end
@@ -137,8 +146,10 @@ module Elektron
       [params, options]
     end
 
-    def full_path(path, params = {}, path_prefix = nil)
+    def full_path(service_url, path, params = {}, path_prefix = nil)
       path_prefix ||= @path_prefix
+      path_prefix ||= URI(service_url).path
+
       path = join_path_parts(path_prefix, path) if path_prefix
       url = to_url(path, params)
       if @auth_session.project_id
@@ -148,10 +159,8 @@ module Elektron
       url
     end
 
-    def http_client(request_options = {})
+    def http_client(service_url)
       token = @auth_session.token
-      service_url = endpoint_url(request_options)
-      @path_prefix = URI(service_url).path unless @auth_prefix
       if @service_url != service_url || @token != token
         options = @options.clone
         options[:headers]['X-Auth-Token'] = token

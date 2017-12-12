@@ -89,43 +89,43 @@ describe Elektron::Service do
 
     it 'should call http client with data' do
       expect(@http_client).to receive(:post) do |path, data|
-        expect(path).to eq('test')
+        expect(path).to eq('/test')
         expect(data).to eq({param1: 'param1'})
       end.and_return(double('response').as_null_object)
-      service.post('test') do
+      service.post('test', path_prefix: '') do
         {param1: 'param1'}
       end
     end
 
     it 'should call http client with data and headers' do
       expect(@http_client).to receive(:post) do |path, data, headers|
-        expect(path).to eq('test')
+        expect(path).to eq('/test')
         expect(data).to eq({param1: 'param1'})
         expect(headers).to eq({'X-Test-Header' => 'test'})
       end.and_return(double('response').as_null_object)
-      service.post('test', {}, headers: {'X-Test-Header' => 'test'} ) do
+      service.post('test', {}, headers: {'X-Test-Header' => 'test'}, path_prefix: '' ) do
         {param1: 'param1'}
       end
     end
 
     it 'should call http client with params, data and headers' do
       expect(@http_client).to receive(:post) do |path, data, headers|
-        expect(path).to eq('test?param1=param1')
+        expect(path).to eq('/test?param1=param1')
         expect(data).to eq({data1: 'test'})
         expect(headers).to eq({'X-Test-Header' => 'test'})
       end.and_return(double('response').as_null_object)
-      service.post('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}) do
+      service.post('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
         {data1: 'test'}
       end
     end
 
     it 'accepts options in params' do
       expect(@http_client).to receive(:post) do |path, data, headers|
-        expect(path).to eq('test?param1=param1')
+        expect(path).to eq('/test?param1=param1')
         expect(data).to eq({data1: 'test'})
         expect(headers).to eq({'X-Test-Header' => 'test'})
       end.and_return(double('response').as_null_object)
-      service.post('test', param1: 'param1', interface: 'public', headers: {'X-Test-Header' => 'test'}) do
+      service.post('test', param1: 'param1', interface: 'public', headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
         {data1: 'test'}
       end
     end
@@ -138,11 +138,11 @@ describe Elektron::Service do
     describe 'option path_prefix' do
       it 'should adopt path' do
         expect(@http_client).to receive(:post) do |path, data, headers|
-          expect(path).to eq('test?param1=param1')
+          expect(path).to eq('/test?param1=param1')
           expect(data).to eq({data1: 'test'})
           expect(headers).to eq({'X-Test-Header' => 'test'})
         end.and_return(double('response').as_null_object)
-        service.post('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}) do
+        service.post('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
           {data1: 'test'}
         end
       end
@@ -163,28 +163,39 @@ describe Elektron::Service do
 
     it 'should call http client with data' do
       expect(@http_client).to receive(:put) do |path, data|
-        expect(path).to eq('test')
+        expect(path).to eq('/test')
         expect(data).to eq({param1: 'param1'})
       end.and_return(double('response').as_null_object)
-      service.put('test') do
+      service.put('test', path_prefix: '') do
         {param1: 'param1'}
       end
     end
 
     it 'should call http client with data and headers' do
       expect(@http_client).to receive(:put) do |path, data, headers|
-        expect(path).to eq('test')
+        expect(path).to eq('/test')
         expect(data).to eq({param1: 'param1'})
         expect(headers).to eq({'X-Test-Header' => 'test'})
       end.and_return(double('response').as_null_object)
-      service.put('test', {}, headers: {'X-Test-Header' => 'test'}) do
+      service.put('test', {}, headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
         {param1: 'param1'}
       end
     end
 
     it 'should call http client with params, data and headers' do
       expect(@http_client).to receive(:put) do |path, data, headers|
-        expect(path).to eq('test?param1=param1')
+        expect(path).to eq('/test?param1=param1')
+        expect(data).to eq({data1: 'test'})
+        expect(headers).to eq({'X-Test-Header' => 'test'})
+      end.and_return(double('response').as_null_object)
+      service.put('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
+        {data1: 'test'}
+      end
+    end
+
+    it 'should call http client with params, data and headers' do
+      expect(@http_client).to receive(:put) do |path, data, headers|
+        expect(path).to eq("#{URI(service.endpoint_url).path}/test?param1=param1")
         expect(data).to eq({data1: 'test'})
         expect(headers).to eq({'X-Test-Header' => 'test'})
       end.and_return(double('response').as_null_object)
@@ -208,28 +219,39 @@ describe Elektron::Service do
 
     it 'should call http client with data' do
       expect(@http_client).to receive(:patch) do |path, data|
-        expect(path).to eq('test')
+        expect(path).to eq('/test')
         expect(data).to eq({param1: 'param1'})
       end.and_return(double('response').as_null_object)
-      service.patch('test') do
+      service.patch('test', path_prefix: '') do
         {param1: 'param1'}
       end
     end
 
     it 'should call http client with data and headers' do
       expect(@http_client).to receive(:patch) do |path, data, headers|
-        expect(path).to eq('test')
+        expect(path).to eq('/test')
         expect(data).to eq({param1: 'param1'})
         expect(headers).to eq({'X-Test-Header' => 'test'})
       end.and_return(double('response').as_null_object)
-      service.patch('test', {}, headers: {'X-Test-Header' => 'test'}) do
+      service.patch('test', {}, headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
         {param1: 'param1'}
       end
     end
 
     it 'should call http client with params, data and headers' do
       expect(@http_client).to receive(:patch) do |path, data, headers|
-        expect(path).to eq('test?param1=param1')
+        expect(path).to eq('/test?param1=param1')
+        expect(data).to eq({data1: 'test'})
+        expect(headers).to eq({'X-Test-Header' => 'test'})
+      end.and_return(double('response').as_null_object)
+      service.patch('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
+        {data1: 'test'}
+      end
+    end
+
+    it 'should build path including original path_prefix' do
+      expect(@http_client).to receive(:patch) do |path, data, headers|
+        expect(path).to eq("#{URI(service.endpoint_url).path}/test?param1=param1")
         expect(data).to eq({data1: 'test'})
         expect(headers).to eq({'X-Test-Header' => 'test'})
       end.and_return(double('response').as_null_object)
@@ -253,14 +275,22 @@ describe Elektron::Service do
 
     it 'should call http client with params' do
       expect(@http_client).to receive(:get) do |path|
-        expect(path).to eq('test?param1=param1')
+        expect(path).to eq('/test?param1=param1')
       end.and_return(double('response').as_null_object)
-      service.get('test', {param1: 'param1'})
+      service.get('test', {param1: 'param1'}, path_prefix: '')
     end
 
     it 'should call http client with params and headers' do
       expect(@http_client).to receive(:get) do |path, headers|
-        expect(path).to eq('test?param1=param1')
+        expect(path).to eq('/test?param1=param1')
+        expect(headers).to eq({'X-Test-Header' => 'test'})
+      end.and_return(double('response').as_null_object)
+      service.get('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '')
+    end
+
+    it 'should build path including original path_prefix' do
+      expect(@http_client).to receive(:get) do |path, headers|
+        expect(path).to eq("#{URI(service.endpoint_url).path}/test?param1=param1")
         expect(headers).to eq({'X-Test-Header' => 'test'})
       end.and_return(double('response').as_null_object)
       service.get('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'})
@@ -281,14 +311,22 @@ describe Elektron::Service do
 
     it 'should call http client with params' do
       expect(@http_client).to receive(:delete) do |path|
-        expect(path).to eq('test?param1=param1')
+        expect(path).to eq('/test?param1=param1')
       end.and_return(double('response').as_null_object)
-      service.delete('test', {param1: 'param1'})
+      service.delete('test', {param1: 'param1'}, path_prefix: '')
     end
 
     it 'should call http client with params and headers' do
       expect(@http_client).to receive(:delete) do |path, headers|
-        expect(path).to eq('test?param1=param1')
+        expect(path).to eq('/test?param1=param1')
+        expect(headers).to eq({'X-Test-Header' => 'test'})
+      end.and_return(double('response').as_null_object)
+      service.delete('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '')
+    end
+
+    it 'should build path including original path_prefix' do
+      expect(@http_client).to receive(:delete) do |path, headers|
+        expect(path).to eq("#{URI(service.endpoint_url).path}/test?param1=param1")
         expect(headers).to eq({'X-Test-Header' => 'test'})
       end.and_return(double('response').as_null_object)
       service.delete('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'})
@@ -353,6 +391,31 @@ describe Elektron::Service do
 
         it 'mapped response is an Array' do
           expect(mapped_response).to be(nil)
+        end
+      end
+
+      context 'map using block' do
+        class User < OpenStruct; end
+        let(:mapped_response) {
+          api_response.map_to('body.users') do |params|
+            User.new(params)
+          end
+        }
+
+        it 'mapped response is an Array' do
+          expect(mapped_response.class).to be(Array)
+        end
+
+        it 'mapped response is an array of User objects' do
+          expect(mapped_response.first.class).to be(User)
+        end
+
+        it 'mapped objects contains id attribute' do
+          expect(mapped_response.first.id).to eq(1)
+        end
+
+        it 'mapped objects contains name attribute' do
+          expect(mapped_response.first.name).to eq('test1')
         end
       end
     end
