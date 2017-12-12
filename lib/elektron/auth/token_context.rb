@@ -1,10 +1,12 @@
 require 'date'
+require_relative '../errors/bad_token_context'
 
 module Elektron
   module TokenContext
     attr_reader :context
 
     def current_context(context)
+      raise BadTokenContext unless context.is_a?(Hash)
       @context = context['token'].nil? ? context : context['token']
     end
 

@@ -6,10 +6,12 @@ describe Elektron::Auth::V3 do
       'x-subject-token'
     ).and_return(ScopedTokenContext.token)
 
-    client = double('client').as_null_object
-    allow(client).to receive(:post).with('/v3/auth/tokens', anything)
+    @client = double('client').as_null_object
+    allow(@client).to receive(:post).with('/v3/auth/tokens', anything)
+                                    .and_return(response)
+    allow(@client).to receive(:get).with('/v3/auth/tokens', anything, anything)
                                    .and_return(response)
-    allow(Elektron::HttpClient).to receive(:new).and_return(client)
+    allow(Elektron::HttpClient).to receive(:new).and_return(@client)
   end
 
   shared_examples 'authentication' do |auth_conf, auth_params|
@@ -19,6 +21,11 @@ describe Elektron::Auth::V3 do
 
     it 'should call identity api with auth params' do
       expect(Elektron::Auth::V3.new(auth_conf).credentials).to eq(auth_params)
+    end
+
+    it 'should call post method on http client' do
+      expect(@client).to receive(:post)
+      Elektron::Auth::V3.new(auth_conf)
     end
   end
 
@@ -51,28 +58,6 @@ describe Elektron::Auth::V3 do
       }
       it_behaves_like 'authentication', auth_conf, auth_params
     end
-
-    context 'Token authentication' do
-      context 'user name and domain name are used' do
-        auth_conf = {
-          url: 'https://keystone.api.com',
-          token: 'TOKEN'
-        }
-
-        auth_params = {
-          'auth' => {
-            'identity' => {
-              'methods' => [
-                'token'
-              ],
-              'token' => {
-                'id' => 'TOKEN'
-              }
-            }
-          }
-        }
-        it_behaves_like 'authentication', auth_conf, auth_params
-      end
 
     context 'user name and domain id are used' do
       auth_conf = {
@@ -229,19 +214,23 @@ describe Elektron::Auth::V3 do
     auth_conf = {
       token: 'OS_TOKEN'
     }
-    auth_params = {
-      'auth' => {
-        'identity' => {
-          'methods' => [
-            'token'
-          ],
-          'token' => {
-            'id' => 'OS_TOKEN'
-          }
-        }
-      }
-    }
-    it_behaves_like 'authentication', auth_conf, auth_params
+
+    it 'should create an auth object' do
+      expect(Elektron::Auth::V3.new(auth_conf)).not_to be(nil)
+    end
+
+    it 'should call get method on http client' do
+      expect(@client).to receive(:get)
+      Elektron::Auth::V3.new(auth_conf)
+    end
+
+    it 'should set headers' do
+      expect(@client).to receive(:get).with(
+        '/v3/auth/tokens',
+        {},
+        { 'X-Auth-Token' => 'OS_TOKEN', 'X-Subject-Token' => 'OS_TOKEN' })
+      Elektron::Auth::V3.new(auth_conf)
+    end
   end
 
   context 'Token authentication with scoped authorization' do

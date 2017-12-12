@@ -151,6 +151,7 @@ module Elektron
     def http_client(request_options = {})
       token = @auth_session.token
       service_url = endpoint_url(request_options)
+      @path_prefix = URI(service_url).path unless @auth_prefix
       if @service_url != service_url || @token != token
         options = @options.clone
         options[:headers]['X-Auth-Token'] = token
@@ -160,19 +161,5 @@ module Elektron
       end
       @client
     end
-
-    # def http_client
-    #   token = @auth_session.token
-    #   service_url = url
-    #   if @service_url != service_url || @token != token
-    #     options = @options.clone
-    #     options[:headers]['X-Auth-Token'] = token
-    #     @client = Elektron::HttpClient.new(url, options)
-    #     @service_url = service_url
-    #     @token = token
-    #   end
-    #   @client
-    # end
-
   end
 end

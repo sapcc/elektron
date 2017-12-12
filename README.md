@@ -122,6 +122,10 @@ These options are valid only within the service (service options).
 * options: `path_prefix`, `:region`, `:interface`, `headers` and `microvirsion`  
   These options are valid only within the request (request options).
 
+**IMPORTANT** if path contains a `:project_id`or `:tenant_id` so it is mapped
+to the project_id of the current token scope.  
+Example: `service.get('projects/:project_id')` results in `'projects/PROJECT_ID'`
+
 #### Request Response
 
 The response object of request returns a wrapped net/http response object. It has the following methods:
