@@ -3,7 +3,7 @@ describe Elektron::HttpClient do
 
   before(:each) do
     allow_any_instance_of(Net::HTTP).to receive(:request)
-      .and_return(double('response').as_null_object)
+      .and_return(double('response', code: 200).as_null_object)
   end
 
   describe '::new' do
@@ -98,44 +98,6 @@ describe Elektron::HttpClient do
         'User-Agent' => "Elektron #{Elektron::VERSION}"
       }.each do |key, value|
         expect(@request).to have_received(:[]=).with(key, value)
-      end
-    end
-  end
-
-  shared_examples 'request with params' do |request_class, method|
-    before :each do
-      @params = { param1: 'test1', param2: 'test2' }
-      @client = Elektron::HttpClient.new(url)
-      @connection = @client.instance_variable_get(:@connection)
-      @request = double(request_class.name).as_null_object
-      allow(request_class).to receive(:new).and_return @request
-      @client.send(method, 'test', @params)
-
-      @url_with_params = "test?#{@params.each_with_object([]){|(k, v), arr| arr << "#{k}=#{v}"}.join('&')}"
-    end
-
-    it "should create an instance of #{request_class}" do
-      expect(request_class).to have_received(:new).with(@url_with_params, {})
-    end
-
-    it 'should make a request' do
-      expect(@connection).to have_received(:request).with(@request)
-    end
-
-    context 'headers are provided' do
-      before :each do
-        @request_headers = {'X-Header' => 'TEST'}
-        @client.send(method, 'test', @params, @request_headers)
-      end
-
-      it 'should create a http post request with headers' do
-        expect(request_class).to have_received(:new).with(
-          @url_with_params, @request_headers
-        )
-      end
-
-      it 'should not set data to body' do
-        expect(@request).not_to have_received(:body=)
       end
     end
   end
@@ -308,7 +270,7 @@ describe Elektron::HttpClient do
 
   describe '#get' do
     it_behaves_like 'request', Net::HTTP::Get, :get
-    it_behaves_like 'request with params', Net::HTTP::Get, :get
+    it_behaves_like 'request without params and data', Net::HTTP::Delete, :delete
   end
 
   describe '#delete' do
@@ -338,17 +300,62 @@ describe Elektron::HttpClient do
       expect(@connection).to receive(:start).and_call_original
       expect(@connection).to receive(:request).with(
         an_instance_of(Net::HTTP::Get)
-      ).and_return(double('response').as_null_object)
+      ).and_return(double('response', code: 200).as_null_object)
       expect(@connection).to receive(:request).with(
         an_instance_of(Net::HTTP::Post)
-      ).and_return(double('response').as_null_object)
+      ).and_return(double('response', code: 200).as_null_object)
       expect(@connection).to receive(:finish)
 
       @client.start do |client|
         client.get('test')
         client.post('test')
       end
+    end
+  end
 
+  describe '#perform' do
+    before :each do
+      @client = Elektron::HttpClient.new(url)
+      @connection = @client.instance_variable_get(:@connection)
+    end
+
+    context 'should not raise error on valid response' do
+      it 'response 200' do
+        allow(@connection).to receive(:request).and_return(
+          double('response', code: 200).as_null_object
+        )
+
+        expect{ @client.get('test')}.not_to raise_error
+      end
+
+      it 'response code is 100' do
+        allow(@connection).to receive(:request).and_return(
+          double('response', code: 100).as_null_object
+        )
+
+        expect{ @client.get('test')}.not_to raise_error
+      end
+
+      it 'response code is 300' do
+        allow(@connection).to receive(:request).and_return(
+          double('response', code: 300).as_null_object
+        )
+
+        expect{ @client.get('test')}.not_to raise_error
+      end
+    end
+
+
+    context 'should raise api response error' do
+      it 'raises error on response code 400' do
+        allow(@connection).to receive(:request).and_return(
+          double('response', code: 400).as_null_object
+        )
+
+        expect{
+          @client.get('test')
+        }.to raise_error Elektron::Errors::ApiResponse
+      end
     end
   end
 end

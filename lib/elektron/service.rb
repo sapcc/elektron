@@ -108,8 +108,7 @@ module Elektron
       service_url = endpoint_url(region: region, interface: interface)
 
       microversion = options.delete(:microversion)
-      headers.megre(microversion_header(microversion)) if microversion
-
+      headers.merge!(microversion_header(microversion)) if microversion
       path = full_path(service_url, path, params, path_prefix)
 
       handle_response do
@@ -147,10 +146,13 @@ module Elektron
     end
 
     def full_path(service_url, path, params = {}, path_prefix = nil)
-      path_prefix ||= @path_prefix
-      path_prefix ||= URI(service_url).path
+      if !(path_prefix.nil? && @path_prefix.nil? && path.start_with?('/'))
+        path_prefix ||= @path_prefix
+        path_prefix ||= URI(service_url).path
 
-      path = join_path_parts(path_prefix, path) if path_prefix
+        path = join_path_parts(path_prefix, path) if path_prefix
+      end
+
       url = to_url(path, params)
       if @auth_session.project_id
         url.gsub!(/:project_id/, @auth_session.project_id)

@@ -147,6 +147,56 @@ describe Elektron::Service do
         end
       end
     end
+
+    context 'path starts with / and path_prefix is nil' do
+      it 'should use path as full path' do
+        expect(@http_client).to receive(:post) do |path, data, headers|
+          expect(path).to eq('/test?param1=param1')
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.post('/test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}) do
+          {data1: 'test'}
+        end
+      end
+    end
+
+    context 'path does not start with / and path_prefix is nil' do
+      it 'should use path of service url as prefix' do
+        expect(@http_client).to receive(:post) do |path, data, headers|
+          expect(path).to eq("#{URI(service.endpoint_url).path}/test?param1=param1")
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.post('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}) do
+          {data1: 'test'}
+        end
+      end
+    end
+
+    context 'path does not start with / and path_prefix is set' do
+      it 'should use path prefix' do
+        expect(@http_client).to receive(:post) do |path, data, headers|
+          expect(path).to eq("/test/test?param1=param1")
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.post('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '/test') do
+          {data1: 'test'}
+        end
+      end
+
+      it 'should set prefix to /' do
+        expect(@http_client).to receive(:post) do |path, data, headers|
+          expect(path).to eq("/test?param1=param1")
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.post('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
+          {data1: 'test'}
+        end
+      end
+    end
   end
 
   describe '#put' do
@@ -201,6 +251,56 @@ describe Elektron::Service do
       end.and_return(double('response').as_null_object)
       service.put('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}) do
         {data1: 'test'}
+      end
+    end
+
+    context 'path starts with / and path_prefix is nil' do
+      it 'should use path as full path' do
+        expect(@http_client).to receive(:put) do |path, data, headers|
+          expect(path).to eq('/test?param1=param1')
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.put('/test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}) do
+          {data1: 'test'}
+        end
+      end
+    end
+
+    context 'path does not start with / and path_prefix is nil' do
+      it 'should use path of service url as prefix' do
+        expect(@http_client).to receive(:put) do |path, data, headers|
+          expect(path).to eq("#{URI(service.endpoint_url).path}/test?param1=param1")
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.put('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}) do
+          {data1: 'test'}
+        end
+      end
+    end
+
+    context 'path does not start with / and path_prefix is set' do
+      it 'should use path prefix' do
+        expect(@http_client).to receive(:put) do |path, data, headers|
+          expect(path).to eq("/test/test?param1=param1")
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.put('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '/test') do
+          {data1: 'test'}
+        end
+      end
+
+      it 'should set prefix to /' do
+        expect(@http_client).to receive(:put) do |path, data, headers|
+          expect(path).to eq("/test?param1=param1")
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.put('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
+          {data1: 'test'}
+        end
       end
     end
   end
@@ -259,6 +359,56 @@ describe Elektron::Service do
         {data1: 'test'}
       end
     end
+
+    context 'path starts with / and path_prefix is nil' do
+      it 'should use path as full path' do
+        expect(@http_client).to receive(:patch) do |path, data, headers|
+          expect(path).to eq('/test?param1=param1')
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.patch('/test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}) do
+          {data1: 'test'}
+        end
+      end
+    end
+
+    context 'path does not start with / and path_prefix is nil' do
+      it 'should use path of service url as prefix' do
+        expect(@http_client).to receive(:patch) do |path, data, headers|
+          expect(path).to eq("#{URI(service.endpoint_url).path}/test?param1=param1")
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.patch('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}) do
+          {data1: 'test'}
+        end
+      end
+    end
+
+    context 'path does not start with / and path_prefix is set' do
+      it 'should use path prefix' do
+        expect(@http_client).to receive(:patch) do |path, data, headers|
+          expect(path).to eq("/test/test?param1=param1")
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.patch('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '/test') do
+          {data1: 'test'}
+        end
+      end
+
+      it 'should set prefix to /' do
+        expect(@http_client).to receive(:patch) do |path, data, headers|
+          expect(path).to eq("/test?param1=param1")
+          expect(data).to eq({data1: 'test'})
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.patch('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
+          {data1: 'test'}
+        end
+      end
+    end
   end
 
   describe '#get' do
@@ -295,6 +445,60 @@ describe Elektron::Service do
       end.and_return(double('response').as_null_object)
       service.get('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'})
     end
+
+    it 'should use params and microversion' do
+      expect(@http_client).to receive(:get) do |path, headers|
+        expect(path).to eq('/shares/detail?limit=10')
+        expect(headers).to eq({'X-OpenStack-Nova-API-Version' => 2.15})
+      end.and_return(double('response').as_null_object)
+      service.get('/shares/detail', {limit: 10}, { microversion: 2.15 })
+    end
+
+    it 'should use microversion' do
+      expect(@http_client).to receive(:get) do |path, headers|
+        expect(path).to eq('/test')
+        expect(headers).to eq({'X-OpenStack-Nova-API-Version' => 2.15})
+      end.and_return(double('response').as_null_object)
+      service.get('/test', {}, microversion: 2.15)
+    end
+
+    context 'path starts with / and path_prefix is nil' do
+      it 'should use path as full path' do
+        expect(@http_client).to receive(:get) do |path, headers|
+          expect(path).to eq('/test?param1=param1')
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.get('/test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'})
+      end
+    end
+
+    context 'path does not start with / and path_prefix is nil' do
+      it 'should use path of service url as prefix' do
+        expect(@http_client).to receive(:get) do |path, headers|
+          expect(path).to eq("#{URI(service.endpoint_url).path}/test?param1=param1")
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.get('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'})
+      end
+    end
+
+    context 'path does not start with / and path_prefix is set' do
+      it 'should use path prefix' do
+        expect(@http_client).to receive(:get) do |path, headers|
+          expect(path).to eq("/test/test?param1=param1")
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.get('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '/test')
+      end
+
+      it 'should set prefix to /' do
+        expect(@http_client).to receive(:get) do |path, headers|
+          expect(path).to eq("/test?param1=param1")
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.get('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '')
+      end
+    end
   end
 
   describe '#delete' do
@@ -330,6 +534,45 @@ describe Elektron::Service do
         expect(headers).to eq({'X-Test-Header' => 'test'})
       end.and_return(double('response').as_null_object)
       service.delete('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'})
+    end
+
+
+    context 'path starts with / and path_prefix is nil' do
+      it 'should use path as full path' do
+        expect(@http_client).to receive(:delete) do |path, headers|
+          expect(path).to eq('/test?param1=param1')
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.delete('/test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'})
+      end
+    end
+
+    context 'path does not start with / and path_prefix is nil' do
+      it 'should use path of service url as prefix' do
+        expect(@http_client).to receive(:delete) do |path, headers|
+          expect(path).to eq("#{URI(service.endpoint_url).path}/test?param1=param1")
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.delete('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'})
+      end
+    end
+
+    context 'path does not start with / and path_prefix is set' do
+      it 'should use path prefix' do
+        expect(@http_client).to receive(:delete) do |path, headers|
+          expect(path).to eq("/test/test?param1=param1")
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.delete('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '/test')
+      end
+
+      it 'should set prefix to /' do
+        expect(@http_client).to receive(:delete) do |path, headers|
+          expect(path).to eq("/test?param1=param1")
+          expect(headers).to eq({'X-Test-Header' => 'test'})
+        end.and_return(double('response').as_null_object)
+        service.delete('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '')
+      end
     end
   end
 
@@ -419,7 +662,5 @@ describe Elektron::Service do
         end
       end
     end
-
-
   end
 end

@@ -7,8 +7,6 @@ require_relative './errors/api_response'
 module Elektron
   # http client
   class HttpClient
-    include UriHelper
-
     # Content-types
     CONTENT_TYPE_JSON = 'application/json'.freeze
     CONTENT_TYPE_FORM = 'application/x-www-form-urlencoded'.freeze
@@ -75,11 +73,9 @@ module Elektron
     end
 
     # GET
-    def get(path, *args)
-      params = args.length > 0 ? args[0] : {}
-      headers = args.length > 1 ? args[1] : {}
+    def get(path, headers = {})
       headers = {}.merge(@headers).merge(headers)
-      perform(Net::HTTP::Get.new(to_url(path, params), headers))
+      perform(Net::HTTP::Get.new(path, headers))
     end
 
     # HEAD
@@ -151,11 +147,9 @@ module Elektron
       # close http session
       #finish
 
-      # Net::HTTPResponse.value will raise an error for non-200 responses.
-      #   Simpler than trying to detect every possible exception.
-      parse(response.value || response)
-    rescue Net::ProtoServerError => e
-      raise ::Elektron::Errors::ApiResponse, e.response
+      # byebug
+      raise ::Elektron::Errors::ApiResponse, response if response.code.to_i >= 400
+      parse(response)
     end
 
     def parse(response)
