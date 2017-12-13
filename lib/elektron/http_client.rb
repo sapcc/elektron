@@ -138,7 +138,7 @@ module Elektron
       # Shore up default headers for the request.
       request['Accept'] = CONTENT_TYPE_JSON
       request['Connection'] = 'keep-alive'
-      request['User-Agent'] = "Elektron #{Elektron::VERSION}"
+      request['User-Agent'] = "Elektron #{::Elektron::VERSION}"
 
       # Actually make the request.
       # start http session

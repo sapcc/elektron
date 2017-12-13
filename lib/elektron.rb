@@ -1,5 +1,6 @@
 require 'logger'
 require_relative 'elektron/client'
+require_relative 'elektron/version'
 
 module Elektron
   def self.logger
