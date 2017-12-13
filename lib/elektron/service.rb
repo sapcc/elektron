@@ -77,6 +77,10 @@ module Elektron
       perform_request(:delete, path, args)
     end
 
+    def options(path, *args)
+      perform_request(:options, path, args)
+    end
+
     def endpoint_url(options = {})
       region = (options[:region] || @options[:region])
       interface = (options[:interface] || @options[:interface])

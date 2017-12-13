@@ -10,11 +10,15 @@ Gem::Specification.new do |s|
   s.authors     = ['Andreas Pfau']
   s.email       = ['andreas.pfau@sap.com']
   s.homepage    = 'https://github.com/sapcc/elektron'
-  s.summary     = 'Summary of Elektron.'
-  s.description = 'Description of Elektron.'
+  s.summary     = 'Elektron is a tiny client for OpenStack APIs.'
+  s.description = 'It handles the authentication, manages the session
+                   (reauthentication), implements the service discovery and
+                   offers the most important HTTP methods. Everything that
+                   Elektron knows and depends on is based solely on the token
+                   context it gets from Keystone.'
   s.license     = 'APACHE'
 
   s.files = Dir[
-    '{app,config,db,lib}/**/*', 'APACHE-LICENSE', 'Rakefile', 'README.md'
+    '{lib}/**/*', 'APACHE-LICENSE', 'Rakefile', 'README.md'
   ]
 end

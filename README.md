@@ -187,6 +187,14 @@ Contributors are welcome and must adhere to the Contributor covenant code of con
 
 Please submit issues/bugs and patches on the Elektron repository.
 
+### Testing
+```
+git clone https://github.com/sapcc/elektron.git
+cd elektron
+bundle install
+bundle exec rspec
+```
+
 ## License
 The gem is available as open source under the terms of the
 Apache License Version 2.0, January 2004 http://www.apache.org/licenses/ - See [LICENSE](APACHE-LICENSE) for details.
