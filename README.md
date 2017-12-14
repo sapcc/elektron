@@ -121,8 +121,7 @@ client = Elektron.client({
   user_name: 'test',
   user_domain_name: 'Default',
   password: 'devstack',
-  scope_domain_name: 'Default',
-  scope_project_name: 'demo'
+  scope_domain_name: 'Default'
 }, { region: 'RegionOne', interface: 'public'})
 ```
 
