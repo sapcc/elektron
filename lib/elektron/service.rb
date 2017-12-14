@@ -152,6 +152,7 @@ module Elektron
 
     def http_client(service_url)
       token = @auth_session.token
+      # caching
       if @service_url != service_url || @token != token
         options = @options.clone
         options[:headers]['X-Auth-Token'] = token

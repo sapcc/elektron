@@ -37,8 +37,10 @@ module Elektron
     end
 
     def service(name, options = {})
+      # caching
+      key = "#{name}_#{options}"
       raise Elektron::Errors::ServiceUnavailable, name unless service?(name)
-      @services[name] ||= Service.new(name,
+      @services[key] ||= Service.new(name,
                                       @auth_session,
                                       @options.clone.merge(options))
     end
