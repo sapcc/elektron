@@ -42,7 +42,7 @@ client = Elektron.client({
   user_name: 'test',
   user_domain_name: 'Default',
   password: 'test',
-  domain_name: 'Default'
+  scope_domain_name: 'Default'
 }, { region: 'RegionOne', interface: 'public'})
 
 identity = client.service('identity', path_prefix: 'V3')
@@ -102,6 +102,68 @@ identity.get('auth/projects').map_to('body.projects' => OpenStruct)
 
 These options are valid for all services and requests (global options).
 
+#### Examples
+
+Authentication with user credentials
+```
+client = Elektron.client({
+  url: 'https://identity.test.com',
+  user_name: 'test',
+  user_domain_name: 'Default',
+  password: 'devstack'
+}, { region: 'RegionOne', interface: 'public'})
+```
+
+Authentication with user credentials and domain scope
+```
+client = Elektron.client({
+  url: 'https://identity.test.com',
+  user_name: 'test',
+  user_domain_name: 'Default',
+  password: 'devstack',
+  scope_domain_name: 'Default',
+  scope_project_name: 'demo'
+}, { region: 'RegionOne', interface: 'public'})
+```
+
+Authentication with user credentials and project scope
+```
+client = Elektron.client({
+  url: 'https://identity.test.com',
+  user_name: 'test',
+  user_domain_name: 'Default',
+  password: 'devstack',
+  scope_project_domain_name: 'Default',
+  scope_project_name: 'demo'
+}, { region: 'RegionOne', interface: 'public'})
+```
+
+Authentication with token
+```
+client = Elektron.client({
+  url: 'https://identity.test.com',
+  token: 'OS_TOKEN'
+}, { region: 'RegionOne', interface: 'public'})
+```
+
+Authentication with token and scope
+```
+client = Elektron.client({
+  url: 'https://identity.test.com',
+  token: 'OS_TOKEN',
+  scope_project_id: '123456789'
+}, { region: 'RegionOne', interface: 'public'})
+```
+
+Authentication with token context
+```
+client = Elektron.client({
+  url: 'https://identity.test.com',
+  token: 'OS_TOKEN',
+  token_context: {"token" => {...}}
+}, { region: 'RegionOne', interface: 'public'})
+```
+
 ### Service
 
 `client.service(SERVICE_NAME, options = {})`
@@ -111,10 +173,26 @@ These options are valid for all services and requests (global options).
 Accepts all client options (global options) plus one more option:
 * `:path_prefix`  
   Path prefix which is used for all requests.  
-  For example, you can set the API version to use by `path_prefix: 'V2.0'`
+  For example, you can set the API version to use by `path_prefix: 'v2.0'`
 
 These options are valid only within the service (service options).
 
+#### Examples
+
+Identity service with public endpoint
+```
+client.service('identity', interface: 'public')
+```
+
+Identity service with internal endpoint and prefix '/v3'
+```
+client.service('identity', interface: 'internal', path_prefix: '/v3')
+```
+
+Manila service with microversion headers
+```
+client.service('share', headers: { 'X-OpenStack-Manila-API-Version' => '2.15'})
+```
 ### Request
 
 `service.HTTP_METHOD(PATH, parameters = {}, options = {}, &block)`
@@ -181,6 +259,37 @@ identity = client.service('identity', path_prefix: 'V3')
 
 users = identity.get('users').map_to('body.users' => User)
 ```
+
+Under the hood `map_to` calls Class.new(attributes). Sometimes you want to pass more parameters than just the attributes. For this case, `map_to` accepts a block in which you can arbitrarily create the object to be mapped.
+
+```
+class User
+  def initialize(name, attributes); end
+end
+
+client = Elektron.client(auth_conf, options)
+identity = client.service('identity')
+
+users = identity.get('users').map_to('body.users') do |attributes|
+  User.new('user1', attributes)
+end
+```
+
+Or if you want to reuse the mapping
+
+```
+class User
+  def initialize(name, attributes); end
+end
+
+user_map = proc { |attributes| User.new('test_user', attributes) }
+
+client = Elektron.client(auth_conf, options)
+identity = client.service('identity')
+
+users = identity.get('users').map_to('body.users', &user_map)
+```
+
 
 ## Contributing
 Contributors are welcome and must adhere to the Contributor covenant code of conduct.
