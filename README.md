@@ -1,9 +1,9 @@
 # Elektron
-Elektron is a tiny client for OpenStack APIs. It handles the authentication, manages the session (reauthentication), implements the service discovery and offers the most important HTTP methods. Everything that Elektron knows and depends on is based solely on the token context it gets from Keystone.
+Elektron is a tiny Ruby client for OpenStack APIs. It handles the authentication, manages the session (re-authentication), implements the service discovery and offers the most important HTTP methods. Everything that Elektron knows and depends on is based solely on the token context it gets from Keystone.
 
 ### What it offers:
   * Authentication
-  * Session with token context (service catalog, user data, scope) and automatic reauthentication
+  * Session with token context (service catalog, user data, scope) and automatic re-authentication
   * HTTP Methods: GET, POST, PUT, PATCH, DELETE and OPTIONS
   * Possibility to set headers and body on every request
   * Mapping of response data to objects
@@ -53,50 +53,43 @@ identity.get('auth/projects').map_to('body.projects' => OpenStruct)
 ` Elektron.client(AUTH_CONF, options = {}) `
 
 #### Auth Conf Parameters
-* `:url`  
-  Keystone Endpoint URL
+
+* `:url` Keystone Endpoint URL
 * `:user_id`
 * `:user_name`
-* `:user_domain_id`  
-  ID of the domain in which the user is defined
-* `:user_domain_name`  
-  name of the domain in which the user is defined
+* `:user_domain_id` ID of the domain in which the user is defined
+* `:user_domain_name` name of the domain in which the user is defined
 * `:password`
 * `:scope_domain_id`
 * `:scope_domain_name`
-* `:scope_project_id`  
-  if given, then all other scope parameters can be neglected
+* `:scope_project_id` if provided, then all other scope parameters can be neglected
 * `:scope_project_name`
 * `:scope_project_domain_name`
 * `:scope_project_domain_id`
-* `scope: 'unscoped'`  
-  to explicitly to get an unscoped token
+* `scope: 'unscoped'` to explicitly to get an unscoped token
 * `:token_context`
-* `:token`  
-  If token is given and token_context not then the client will validate this token and build the session based on the response data
+* `:token` if token is provided and token_context is not, then the client will validate this token and build the session based on the response data
 
 **NOTE** automatic re-authentication is only possible if user credentials are provided (user_id / user_name, password, etc.)
 
+Depending on the use case a different combination of the above parameters is necessary (see below for examples).
+
 #### Client Options
 
-* `:headers`  
-  Custom headers
-  Default: `{}`
-* `:interface`
-  Endpoint interface  
-  Default: `'internal'`
-* `:region`  
-  Region of services endpoints
-* `:client`
-  Options for HTTP client  
-  Default: `{
+* `:headers` custom headers, default: `{}`
+* `:interface` endpoint interface, default: `'internal'`
+* `:region` the region of the services endpoints
+* `:client` options for HTTP client, default: 
+  ```
+  {
     open_timeout: 10,
     read_timeout: 60,
     keep_alive_timeout: 60,
     verify_ssl: false
-  }`
-* `:debug`  
-  If true then logs debug output to console.  
+  }
+  ```
+  
+* `:debug` if true then logs debug output to console.  
   **WARNING** This method opens a serious security hole. Never use this method in production code.  
   Default: `false`
 
@@ -170,9 +163,7 @@ client = Elektron.client({
 #### Service Options
 
 Accepts all client options (global options) plus one more option:
-* `:path_prefix`  
-  Path prefix which is used for all requests.  
-  For example, you can set the API version to use by `path_prefix: 'v2.0'`
+* `:path_prefix` path prefix which is used for all requests. For example, you can set the API version to be used by specifying `path_prefix: 'v2.0'`
 
 These options are valid only within the service (service options).
 
@@ -192,23 +183,24 @@ Manila service with microversion headers
 ```
 client.service('share', headers: { 'X-OpenStack-Manila-API-Version' => '2.15'})
 ```
+
 ### Request
 
 `service.HTTP_METHOD(PATH, parameters = {}, options = {}, &block)`
-* parameters: are url parameters. Example: path = 'auth/projects' and parameters are { name: 'test' } results in `'/auth/projects?name=test'`
+* parameters: are URL parameters. Example: path = 'auth/projects' with parameter { name: 'test' } results in `'/auth/projects?name=test'`
 * options: `path_prefix`, `:region`, `:interface` and `headers`  
   These options are valid only within the request (request options).
 
-**IMPORTANT** if path contains a `:project_id`or `:tenant_id` so it is mapped
+**IMPORTANT** if the path contains either the symbol `:project_id` or `:tenant_id` then it is mapped
 to the project_id of the current token scope.  
 Example: `service.get('projects/:project_id')` results in `'projects/PROJECT_ID'`
 
 #### Request Response
 
-The response object of request returns a wrapped net/http response object. It has the following methods:
+The response object of the request returns a wrapped net/http response object. It has the following methods:
 
 * `body` returns the body as JSON.
-* `[]` make it possible to access response headers.   
+* `[]` makes it possible to access response headers.   
 * `map_to` maps the response to an object or an array of objects.
 
 
