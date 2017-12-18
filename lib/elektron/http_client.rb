@@ -3,6 +3,7 @@ require 'json'
 require 'net/http'
 require_relative './utils/uri_helper'
 require_relative './errors/api_response'
+require_relative './version'
 
 module Elektron
   # http client
