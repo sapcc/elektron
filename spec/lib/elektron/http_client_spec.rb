@@ -40,7 +40,9 @@ describe Elektron::HttpClient do
       }
 
       it 'should set the headers instance variable' do
-        expect(client.instance_variable_get(:@headers)).to eq(options[:headers])
+        expect(client.instance_variable_get(:@headers)).to eq(
+          Elektron::HttpClient::DEFAULT_HEADERS.clone.merge(options[:headers])
+        )
       end
 
       it 'create a new http client with options' do
@@ -78,26 +80,27 @@ describe Elektron::HttpClient do
     before :each do
       @client = Elektron::HttpClient.new(url)
       @connection = @client.instance_variable_get(:@connection)
-      @request = double(request_class.name).as_null_object
-      allow(request_class).to receive(:new).and_return @request
+      allow(request_class).to receive(:new).and_call_original
       @client.send(method, 'test')
     end
 
     it "should create an instance of #{request_class}" do
-      expect(request_class).to have_received(:new).with('test', {})
+      expect(request_class).to have_received(:new).with(
+        'test', Elektron::HttpClient::DEFAULT_HEADERS
+      )
     end
 
     it 'should make a request' do
-      expect(@connection).to have_received(:request).with(@request)
+      expect(@connection).to have_received(:request).with(
+        an_instance_of(request_class)
+      )
     end
 
-    it 'should set needed headers on request' do
-      {
-        'Accept' => Elektron::HttpClient::CONTENT_TYPE_JSON,
-        'Connection' => 'keep-alive',
-        'User-Agent' => "Elektron #{Elektron::VERSION}"
-      }.each do |key, value|
-        expect(@request).to have_received(:[]=).with(key, value)
+    it 'should set default headers on request' do
+      expect(@connection).to have_received(:request) do |request|
+        %w[Accept Connection User-Agent].each do |k|
+          expect(request[k]).to eq(Elektron::HttpClient::DEFAULT_HEADERS[k])
+        end
       end
     end
   end
@@ -118,7 +121,9 @@ describe Elektron::HttpClient do
 
       it 'should create a http post request with headers' do
         expect(request_class).to have_received(:new).with(
-          'test', @request_headers
+          'test', Elektron::HttpClient::DEFAULT_HEADERS.clone.merge(
+            @request_headers
+          )
         )
       end
 
@@ -140,7 +145,9 @@ describe Elektron::HttpClient do
 
       it 'should create a http request with headers' do
         expect(request_class).to have_received(:new).with(
-          'test', @client_headers.merge(@request_headers)
+          'test', Elektron::HttpClient::DEFAULT_HEADERS.clone.merge(
+            @client_headers
+          ).merge(@request_headers)
         )
       end
     end
@@ -160,7 +167,9 @@ describe Elektron::HttpClient do
       end
 
       it 'should create a http request with data' do
-        expect(request_class).to have_received(:new).with('test', {})
+        expect(request_class).to have_received(:new).with(
+          'test', Elektron::HttpClient::DEFAULT_HEADERS
+        )
       end
 
       it 'should set data to body' do
@@ -190,7 +199,9 @@ describe Elektron::HttpClient do
 
       it 'should create a http post request with headers' do
         expect(request_class).to have_received(:new).with(
-          'test', @request_headers
+          'test', Elektron::HttpClient::DEFAULT_HEADERS.clone.merge(
+            @request_headers
+          )
         )
       end
 
@@ -214,7 +225,9 @@ describe Elektron::HttpClient do
 
       it 'should create a http request with headers' do
         expect(request_class).to have_received(:new).with(
-          'test', @request_headers
+          'test', Elektron::HttpClient::DEFAULT_HEADERS.clone.merge(
+            @request_headers
+          )
         )
       end
 
@@ -242,7 +255,9 @@ describe Elektron::HttpClient do
 
       it 'should create a http request with headers' do
         expect(request_class).to have_received(:new).with(
-          'test', @client_headers.merge(@request_headers)
+          'test', Elektron::HttpClient::DEFAULT_HEADERS.clone.merge(
+            @client_headers
+          ).merge(@request_headers)
         )
       end
       it 'should set content_type to json' do
@@ -355,6 +370,15 @@ describe Elektron::HttpClient do
         expect{
           @client.get('test')
         }.to raise_error Elektron::Errors::ApiResponse
+      end
+    end
+
+    context 'custom accept header' do
+      it 'should accept custom Acept header' do
+        expect(@connection).to receive(:request) do |request|
+          expect(request['Accept']).to eq('text/plain')
+        end.and_return(double('request', code: 200).as_null_object)
+        @client.get('test', { 'Accept' => 'text/plain' } )
       end
     end
   end

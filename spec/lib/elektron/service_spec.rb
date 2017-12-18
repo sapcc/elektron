@@ -412,6 +412,13 @@ describe Elektron::Service do
   end
 
   describe '#get' do
+    it 'should call a get with custom headers' do
+      expect(@http_client).to receive(:get) do |path, headers|
+        expect(headers['Accept']).to eq('text/plain')
+      end.and_return(double('response').as_null_object)
+      service.get('test', headers: { 'Accept' => 'text/plain'})
+    end
+
     it 'should create a new http client' do
       expect(Elektron::HttpClient).to receive(:new)
       service.get('test')

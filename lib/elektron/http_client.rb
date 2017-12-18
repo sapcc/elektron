@@ -17,10 +17,17 @@ module Elektron
       keep_alive_timeout: 60
     }.freeze
 
+    DEFAULT_HEADERS = {
+      'Accept' => CONTENT_TYPE_JSON,
+      'Connection' => 'keep-alive',
+      'User-Agent' => "Elektron #{::Elektron::VERSION}"
+    }.freeze
+
     def initialize(url, options = {})
       uri = URI.parse(url)
       options = options.clone
-      @headers = options.delete(:headers) || {}
+
+      @headers = DEFAULT_HEADERS.clone.merge(options.delete(:headers) || {})
       @connection = Net::HTTP.new(uri.host, uri.port, :ENV)
 
       http_options = {}.merge(DEFAULT_OPTIONS)
@@ -135,11 +142,6 @@ module Elektron
 
     # Perform the request.
     def perform(request)
-      # Shore up default headers for the request.
-      request['Accept'] = CONTENT_TYPE_JSON
-      request['Connection'] = 'keep-alive'
-      request['User-Agent'] = "Elektron #{::Elektron::VERSION}"
-
       # Actually make the request.
       # start http session
       #start
