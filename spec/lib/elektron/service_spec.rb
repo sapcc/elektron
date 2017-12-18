@@ -490,6 +490,29 @@ describe Elektron::Service do
         service.get('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '')
       end
     end
+
+    context 'path starts with http' do
+      it 'should use path as full_path' do
+        expect(@http_client).to receive(:get) do |path, headers|
+          expect(path).to eq("http://test.com/test?param1=param1")
+        end.and_return(double('response').as_null_object)
+        service.get('http://test.com/test', {param1: 'param1'})
+      end
+
+      it 'should ignore path_prefix' do
+        expect(@http_client).to receive(:get) do |path, headers|
+          expect(path).to eq("http://test.com/test?param1=param1")
+        end.and_return(double('response').as_null_object)
+        service.get('http://test.com/test', {param1: 'param1'}, path_prefix: '/test')
+      end
+
+      it 'should accept http as param' do
+        expect(@http_client).to receive(:get) do |path, headers|
+          expect(path).to eq("/test/test?#{URI.encode_www_form({param1: 'http://test.com'})}")
+        end.and_return(double('response').as_null_object)
+        service.get('test', {param1: 'http://test.com'}, path_prefix: '/test')
+      end
+    end
   end
 
   describe '#delete' do

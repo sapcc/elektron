@@ -135,7 +135,9 @@ module Elektron
     end
 
     def full_path(service_url, path, params = {}, path_prefix = nil)
-      if !(path_prefix.nil? && @path_prefix.nil? && path.start_with?('/'))
+      if path !~ /https?:\/\/[\S]+/ &&
+         !(path_prefix.nil? && @path_prefix.nil? && path.start_with?('/'))
+
         path_prefix ||= @path_prefix
         path_prefix ||= URI(service_url).path
 
