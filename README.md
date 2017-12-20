@@ -79,7 +79,7 @@ Depending on the use case a different combination of the above parameters is nec
 * `:headers` custom headers, default: `{}`
 * `:interface` endpoint interface, default: `'internal'`
 * `:region` the region of the services endpoints
-* `:client` options for HTTP client, default: 
+* `:client` options for HTTP client, default:
   ```
   {
     open_timeout: 10,
@@ -88,7 +88,7 @@ Depending on the use case a different combination of the above parameters is nec
     verify_ssl: false
   }
   ```
-  
+
 * `:debug` if true then logs debug output to console.  
   **WARNING** This method opens a serious security hole. Never use this method in production code.  
   Default: `false`
@@ -281,6 +281,38 @@ identity = client.service('identity')
 users = identity.get('users').map_to('body.users', &user_map)
 ```
 
+### Middlewares
+Each service in Elektron can be extended by middlewares. Middlewares allow to manipulate parameters, headers and data before they are passed to the http client.
+
+Middleware can be an object or an instance of Proc. The important thing is that it responds to the method "call" which returns an array of params, options and data.
+
+A middleware is added to the service using the method `add_middleware` which accepts a parameter or a block.
+
+```
+class SetupHeadersMiddleware
+  def call(params, options, data)
+    # user needs to have admin privileges to ask for all projects
+    all_projects = params.delete(:all_projects)
+
+    # user needs to have admin privileges to impersonate another project
+    # don't ask for all and one project at the same time
+    project_id = params.delete(:project_id) unless all_projects
+
+    options[:headers] ||= {}
+    if project_id
+      options[:headers]['X-Auth-Sudo-Project-Id'] = project_id
+    elsif all_projects
+      options[:headers]['X-Auth-All-Projects'] = all_projects.to_s
+    end
+    [params, options, data]
+  end
+end
+
+dns = Elektron.client(debug: Rails.env.development?).service('dns', path_prefix: '/v2')
+dns.add_middleware(SetupHeadersMiddleware)
+
+dns.get("zones/#{zone_id}/recordsets", project_id: '1234567890')
+```
 
 ## Contributing
 Contributors are welcome and must adhere to the Contributor covenant code of conduct.
