@@ -405,7 +405,7 @@ describe Elektron::Service do
           expect(headers).to eq({'X-Test-Header' => 'test'})
         end.and_return(double('response').as_null_object)
         service.patch('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
-          {data1: 'test'}
+          { data1: 'test' }
         end
       end
     end
@@ -661,6 +661,104 @@ describe Elektron::Service do
           expect(headers).to eq({'X-Test-Header' => 'test'})
         end.and_return(double('response').as_null_object)
         service.options('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '')
+      end
+    end
+  end
+
+  describe 'middlewares' do
+    it 'should response to add_middleware' do
+      expect(service).to respond_to(:add_middleware)
+    end
+
+    describe '#add_middleware' do
+      before :each do
+        @middlewares = service.instance_variable_get(:@middlewares)
+      end
+
+      it 'should add a new middleware' do
+        expect {
+          service.add_middleware { |params, options, data| }
+        }.to change(@middlewares, :length).by(1)
+      end
+
+      it 'should not add a new middleware' do
+        expect {
+          service.add_middleware
+        }.to raise_error(Elektron::Errors::BadMiddleware)
+      end
+
+      it 'should return true' do
+        expect(service.add_middleware {}).to eq(true)
+      end
+
+      it 'should accept proc as parameter' do
+        middleware = proc { |p, o, d| }
+
+        expect {
+          service.add_middleware(middleware)
+        }.to change(@middlewares, :length).by(1)
+      end
+
+      it 'should accept object as parameter' do
+        class TestMiddleware
+          def call(p, o, d); end
+        end
+
+        expect {
+          service.add_middleware(TestMiddleware.new)
+        }.to change(@middlewares, :length).by(1)
+      end
+    end
+
+    describe 'execute middlewares' do
+      before :each do
+        @service = Elektron::Service.new('identity', auth_session)
+        @service_http_client = double('http client').as_null_object
+        allow(Elektron::HttpClient).to receive(:new).and_return(@service_http_client)
+      end
+
+      context 'modify parameters' do
+        before :each do
+          @service.add_middleware do |params, options, data|
+            options[:headers] ||= {}
+            options[:headers].merge!('X-TEST' => 'test')
+
+            [
+              params.merge(test: true),
+              options,
+              (data || {}).merge('item' => 'test')
+            ]
+          end
+
+          @service.post('auth/tokens', {}, headers: { 'X-Auth-Token' => 'TOKEN' }) do
+            { 'token' => 'TOKEN' }
+          end
+        end
+
+        it 'should pass modified params to http_client' do
+          expect(@service_http_client).to have_received(:post).with(
+            "#{URI(service.endpoint_url).path}/auth/tokens?test=true",
+            { 'token' => 'TOKEN', 'item' => 'test' },
+            { 'X-Auth-Token' => 'TOKEN', 'X-TEST' => 'test' }
+          )
+        end
+      end
+
+      context 'overwrite parameters' do
+        before :each do
+          @service.add_middleware do |params, options, data|
+            [{ test: true }, { headers: { 'X-Auth-Token' => 'TEST' } }, nil]
+          end
+
+          @service.get('auth/tokens', param1: 'param1')
+        end
+
+        it 'should pass modified params to http_client' do
+          expect(@service_http_client).to have_received(:get).with(
+            "#{URI(service.endpoint_url).path}/auth/tokens?test=true",
+            { 'X-Auth-Token' => 'TEST' }
+          )
+        end
       end
     end
   end

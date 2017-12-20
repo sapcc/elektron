@@ -1,6 +1,7 @@
 require_relative './http_client'
 require_relative './utils/uri_helper'
 require_relative './errors/service_endpoint_unavailable'
+require_relative './errors/bad_middleware'
 
 module Elektron
   class Service
@@ -52,6 +53,24 @@ module Elektron
       @options = options
       @options[:headers] ||= {}
       @path_prefix = @options.delete(:path_prefix)
+      @middlewares = []
+    end
+
+    def add_middleware(middleware = nil, &block)
+      middleware = block if middleware.nil?
+      if middleware.is_a?(Class) && !middleware.respond_to?(:call)
+        middleware = middleware.new
+      end
+
+      unless middleware.respond_to?(:call)
+        raise Elektron::Errors::BadMiddleware, 'Middleware does not respond to '\
+                                               'call method! Please provide a '\
+                                               'proc or an object with a call '\
+                                               'method which accepts three '\
+                                               'parameters "params", "options" '\
+                                               'and "data"'
+      end
+      @middlewares << middleware && true
     end
 
     def get(path, *args)
@@ -99,6 +118,17 @@ module Elektron
 
     def perform_request(method, path, request_args, data=nil)
       params, options = get_params_and_options(request_args)
+
+      @middlewares.each do |middleware|
+        result = middleware.call(params, options, data)
+        if !result.is_a?(Array) || result.length != 3
+          raise ::Elektron::Errors::BadMiddleware, 'Middleware must return an '\
+                                                   'array of three values, '\
+                                                   'params", "options" '\
+                                                   'and "data"'
+        end
+        params, options, data = result
+      end
 
       # it is allowed to provide options via params,
       # so check both options and params
