@@ -29,17 +29,32 @@ module Elektron
         end
       end
 
-      def self.read_error_messages(hash,messages=[])
+      def self.read_error_messages(hash, messages = [])
         return [hash.to_s] unless hash.respond_to?(:each)
+
+        message_candidates = {
+          'message' => nil,
+          'description' => nil,
+          'type' => nil
+        }
+
         hash.each do |k, v|
-          messages << v if %w[description message type].include?(k)
           if v.is_a?(Hash)
             read_error_messages(v, messages)
           elsif v.is_a?(Array)
             v.each do |value|
               read_error_messages(value, messages) if value.is_a?(Hash)
             end
+          else
+            if message_candidates.keys.include?(k)
+              message_candidates[k] = v
+            end
           end
+        end
+        if message_candidates.values.uniq.length.positive?
+          messages << (message_candidates['message'] ||
+            message_candidates['description'] ||
+            message_candidates['type'])
         end
         messages
       end
