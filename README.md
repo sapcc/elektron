@@ -282,9 +282,9 @@ users = identity.get('users').map_to('body.users', &user_map)
 ```
 
 ### Middlewares
-Each service in Elektron can be extended by middlewares. Middlewares allow to manipulate parameters, headers and data before they are passed to the http client.
+Each service in Elektron can be extended by middlewares. Middlewares can be used to manipulate parameters, headers and data before they are passed to the http client.
 
-Middleware can be an object or an instance of Proc. The important thing is that it responds to the method "call" which returns an array of params, options and data.
+A middleware can be an object or an instance of `Proc`. The important thing is that it responds to the method "call" which returns an array of params, options and data.
 
 A middleware is added to the service using the method `add_middleware` which accepts a parameter or a block.
 
