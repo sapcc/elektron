@@ -141,14 +141,10 @@ module Elektron
       path = full_path(service_url, path, params, path_prefix)
 
       handle_response do
-        if data
-          http_client(service_url).send(
-            method, path, data, headers
-          )
+        if %i[post put patch].include?(method)
+          http_client(service_url).send(method, path, data, headers)
         else
-          http_client(service_url).send(
-            method, path, headers
-          )
+          http_client(service_url).send(method, path, headers)
         end
       end
     end

@@ -197,6 +197,29 @@ describe Elektron::Service do
         end
       end
     end
+
+    context 'overwrite default headers' do
+      before :each do
+        allow(Elektron::HttpClient).to receive(:new).and_call_original
+        allow_any_instance_of(Elektron::HttpClient).to receive(
+          :perform
+        ).and_return(double('response', body: 'test'))
+      end
+
+      it 'should overwrite the default content type' do
+        expect(Net::HTTP::Post).to receive(:new) do |_path, headers|
+          expect(headers['Content-Type']).to eq(
+            'application/openstack-images-v2.1-json-patch'
+          )
+        end
+
+        service.post(
+          'test', {}, headers: {
+            'Content-Type' => 'application/openstack-images-v2.1-json-patch'
+          }
+        )
+      end
+    end
   end
 
   describe '#put' do
@@ -303,6 +326,29 @@ describe Elektron::Service do
         end
       end
     end
+
+    context 'overwrite default headers' do
+      before :each do
+        allow(Elektron::HttpClient).to receive(:new).and_call_original
+        allow_any_instance_of(Elektron::HttpClient).to receive(
+          :perform
+        ).and_return(double('response', body: 'test'))
+      end
+
+      it 'should overwrite the default content type' do
+        expect(Net::HTTP::Put).to receive(:new) do |_path, headers|
+          expect(headers['Content-Type']).to eq(
+            'application/openstack-images-v2.1-json-patch'
+          )
+        end
+
+        service.put(
+          'test', {}, headers: {
+            'Content-Type' => 'application/openstack-images-v2.1-json-patch'
+          }
+        )
+      end
+    end
   end
 
   describe '#patch' do
@@ -406,6 +452,29 @@ describe Elektron::Service do
         end.and_return(double('response').as_null_object)
         service.patch('test', {param1: 'param1'}, headers: {'X-Test-Header' => 'test'}, path_prefix: '') do
           { data1: 'test' }
+        end
+      end
+
+      context 'overwrite default headers' do
+        before :each do
+          allow(Elektron::HttpClient).to receive(:new).and_call_original
+          allow_any_instance_of(Elektron::HttpClient).to receive(
+            :perform
+          ).and_return(double('response', body: 'test'))
+        end
+
+        it 'should overwrite the default content type' do
+          expect(Net::HTTP::Patch).to receive(:new) do |_path, headers|
+            expect(headers['Content-Type']).to eq(
+              'application/openstack-images-v2.1-json-patch'
+            )
+          end
+
+          service.patch(
+            'test', {}, headers: {
+              'Content-Type' => 'application/openstack-images-v2.1-json-patch'
+            }
+          )
         end
       end
     end
