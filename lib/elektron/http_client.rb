@@ -35,7 +35,10 @@ module Elektron
 
       if uri.scheme == 'https'
         http_options[:use_ssl] = true
-        if options.fetch(:verify_ssl, true) == false
+        verify_ssl = options.delete(:verify_ssl)
+        verify_ssl = true if verify_ssl.nil?
+
+        if verify_ssl == false
           http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE
         end
       end
