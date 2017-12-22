@@ -156,6 +156,33 @@ client = Elektron.client({
 }, { region: 'RegionOne', interface: 'public'})
 ```
 
+#### Client Methods
+
+* `is_admin_project?` returns true if current scope project has the flag admin
+* `user_id`
+* `user_name`
+* `user_description`
+* `user_domain_id`
+* `user_domain_name`
+* `domain_id`
+* `domain_name`
+* `project_id`
+* `project_name`
+* `project_parent_id`
+* `project_domain_id`
+* `project_domain_name`
+* `expires_at` returns a Time object
+* `expired?` returns true or false
+* `issued_at` returns a Time object
+* `catalog` returns the services catalog
+* `service?(service_name_or_type)` returns true if catalog includes the service_name
+* `roles` returns an array of role hashes ([{'id' => ID, 'name' => NAME}])
+* `role_names` returns an array of role names
+* `has_role?(role_name)` returns true or false
+* `service_url(service_name_or_type, options = {})` options are :region and :interface
+* `available_services_regions` returns an array of available regions
+* `token` returns the token value (AUTH_TOKEN)
+
 ### Service
 
 `client.service(SERVICE_NAME, options = {})`
