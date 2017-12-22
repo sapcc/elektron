@@ -157,7 +157,8 @@ client = Elektron.client({
 ```
 
 #### Client Methods
-
+* `service(service_name_or_type, options = {})`, options can include       
+  `:headers, :interface, :region, :path_prefix, :client, :debug`
 * `is_admin_project?` returns true if current scope project has the flag admin
 * `user_id`
 * `user_name`
