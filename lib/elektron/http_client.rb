@@ -33,11 +33,10 @@ module Elektron
 
       http_options = {}.merge(DEFAULT_OPTIONS)
 
+      verify_ssl = options.fetch(:client, {}).delete(:verify_ssl) != false
+      
       if uri.scheme == 'https'
         http_options[:use_ssl] = true
-
-        verify_ssl = options.fetch(:client, {}).delete(:verify_ssl) != false
-
         if verify_ssl == false
           http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE
         end
