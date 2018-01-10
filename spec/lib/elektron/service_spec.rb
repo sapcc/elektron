@@ -41,38 +41,6 @@ describe Elektron::Service do
     @http_client
   end
 
-  describe '#http_client' do
-    context 'user credentials provided' do
-      before :each do
-        @service = Elektron::Service.new('identity', auth_session)
-      end
-
-      it 'do not create a new http client' do
-        @service.instance_variable_set(:@service_url, 'some url')
-        @service.instance_variable_set(:@token, ScopedTokenContext.token)
-        expect(Elektron::HttpClient).not_to receive(:new)
-        @service.send(:http_client, 'some url')
-      end
-    end
-
-    context 'no user credentials provided' do
-      before :each do
-        auth_conf = {
-          token_context: ScopedTokenContext.context,
-          token: ScopedTokenContext.token
-        }
-        @auth_session = Elektron::AuthSession.new(auth_conf)
-      end
-
-      it 'create a new http client' do
-        service = Elektron::Service.new('identity', @auth_session)
-        allow(@auth_session).to receive(:expired?).and_return(true)
-        expect(Elektron::HttpClient).to receive(:new)
-        service.send(:http_client, 'some url')
-      end
-    end
-  end
-
   describe '#endpoint_url' do
     it 'should return the public endpoint of identity' do
       expect(service.endpoint_url).to eq('http://example.com/identity/public/v2.0')

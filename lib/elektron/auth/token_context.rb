@@ -6,10 +6,7 @@ module Elektron
     attr_reader :context
 
     def current_context(context)
-      unless context.is_a?(Hash)
-        raise ::Elektron::Errors::BadTokenContext, 'no context provided or ' \
-                                                   'context is not a Hash'
-      end
+      raise BadTokenContext unless context.is_a?(Hash)
       @context = context['token'].nil? ? context : context['token']
     end
 
