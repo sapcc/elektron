@@ -35,8 +35,8 @@ describe Elektron::AuthSession do
   describe '#new' do
     it 'should create a new instance by given token data' do
       expect(Elektron::Auth::V3).not_to receive(:new)
-      Elektron::AuthSession.new(
-        { token_context: {}, token: 'test' }, version: :v3
+      auth_session = Elektron::AuthSession.new(
+        {token_context: {}, token: 'test'}, version: :v3
       )
     end
 
@@ -76,25 +76,9 @@ describe Elektron::AuthSession do
     end
 
     it 'do not reautheticate on valid token' do
-      context['expires_at'] = (Time.now + 10).to_s
+      context['expires_at'] = (Time.now+10).to_s
       expect(auth_session).not_to receive(:authenticate).and_call_original
       auth_session.token
-    end
-
-    context 'no auth class provided' do
-      before :each do
-        auth_conf = {
-          token_context: ScopedTokenContext.context,
-          token: ScopedTokenContext.token
-        }
-        @auth_session = Elektron::AuthSession.new(auth_conf)
-      end
-
-      it 'return nil if expired' do
-        allow(@auth_session).to receive(:expired?).and_return(true)
-
-        expect(auth_session.token).to be(nil)
-      end
     end
   end
 
