@@ -48,16 +48,16 @@ module Elektron
     protected
 
     def enforce_valid_token
-      if expired?
-        # reauthenticate
-        unless authenticate
-          raise Elektron::Errors::TokenExpired, 'token has been expired'
-        end
+      return true unless expired?
+
+      unless @auth_class
+        raise Elektron::Errors::TokenExpired, 'token has been expired'
       end
+      # reauthenticate
+      authenticate
     end
 
     def authenticate
-      return false unless @auth_class
       auth = @auth_class.new(@auth_conf, @options)
       current_context(auth.context)
       @token = auth.token_value

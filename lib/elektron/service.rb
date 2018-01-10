@@ -179,9 +179,14 @@ module Elektron
     end
 
     def http_client(service_url)
-      token = @auth_session.token
+      token = begin
+                @auth_session.token
+              rescue Elektron::Errors::TokenExpired
+                # token has been expired
+                nil
+              end
       # caching
-      if @service_url != service_url || @token != token
+      if token.nil? || @service_url != service_url || @token != token
         options = @options.clone
         options[:headers]['X-Auth-Token'] = token
         @client = Elektron::HttpClient.new(service_url, options)
