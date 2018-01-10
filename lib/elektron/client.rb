@@ -15,7 +15,7 @@ module Elektron
                    :project_parent_id, :project_domain_id, :project_domain_name,
                    :expires_at, :expired?, :issued_at, :catalog,
                    :service?, :roles, :role_names, :has_role?, :service_url,
-                   :available_services_regions, :token
+                   :available_services_regions, :token, :enforce_valid_token
 
     DEFAULT_OPTIONS = {
       # version: 'V3',

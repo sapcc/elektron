@@ -8,70 +8,71 @@ module Elektron
     def current_context(context)
       raise BadTokenContext unless context.is_a?(Hash)
       @context = context['token'].nil? ? context : context['token']
+      @token_values = {}
     end
 
     def is_admin_project?
-      @is_admin_project ||= read_value('is_admin_project') || false
+      @token_values[:is_admin_project] ||= read_value('is_admin_project') || false
     end
 
     def user_id
-      @user_id ||= read_value('user.id')
+      @token_values[:user_id] ||= read_value('user.id')
     end
 
     def user_name
-      @user_name ||= read_value('user.name')
+      @token_values[:user_name] ||= read_value('user.name')
     end
 
     def user_description
-      @user_description ||= read_value('user.description')
+      @token_values[:user_description] ||= read_value('user.description')
     end
 
     def user_domain_id
-      @user_domain_id ||= read_value('user.domain.id')
+      @token_values[:user_domain_id] ||= read_value('user.domain.id')
     end
 
     def user_domain_name
-      @user_domain_name ||= read_value('user.domain.name')
+      @token_values[:user_domain_name] ||= read_value('user.domain.name')
     end
 
     def domain_id
-      @scope_domain_id ||= read_value('domain.id')
+      @token_values[:scope_domain_id] ||= read_value('domain.id')
     end
 
     def domain_name
-      @scope_domain_name ||= read_value('domain.name')
+      @token_values[:scope_domain_name] ||= read_value('domain.name')
     end
 
     def project_id
-      @scope_project_id ||= read_value('project.id')
+      @token_values[:scope_project_id] ||= read_value('project.id')
     end
 
     def project_name
-      @scope_project_name ||= read_value('project.name')
+      @token_values[:scope_project_name] ||= read_value('project.name')
     end
 
     def project_parent_id
-      @project_parent_id ||= read_value('project.parent_id')
+      @token_values[:project_parent_id] ||= read_value('project.parent_id')
     end
 
     def project_domain_id
-      @project_domain_id ||= read_value('project.domain.id')
+      @token_values[:project_domain_id] ||= read_value('project.domain.id')
     end
 
     def project_domain_name
-      @project_domain_name ||= read_value('project.domain.name')
+      @token_values[:project_domain_name] ||= read_value('project.domain.name')
     end
 
     def project
-      @project ||= read_value('project')
+      @token_values[:project] ||= read_value('project')
     end
 
     def domain
-      @domain ||= read_value('domain')
+      @token_values[:domain] ||= read_value('domain')
     end
 
     def expires_at
-      @token_expires_at ||= DateTime.parse(@context['expires_at']).to_time
+      @token_values[:token_expires_at] ||= DateTime.parse(@context['expires_at']).to_time
     end
 
     def expired?
@@ -79,11 +80,11 @@ module Elektron
     end
 
     def issued_at
-      @token_issued_at ||= DateTime.parse(@context['issued_at']).to_time
+      @token_values[:token_issued_at] ||= DateTime.parse(@context['issued_at']).to_time
     end
 
     def catalog
-      @catalog ||= (@context['catalog'] || @context['serviceCatalog'] || [])
+      @token_values[:catalog] ||= (@context['catalog'] || @context['serviceCatalog'] || [])
     end
 
     def service?(type)
@@ -94,11 +95,11 @@ module Elektron
     end
 
     def roles
-      @roles ||= (@context['roles'] || read_value('user.roles') || [])
+      @token_values[:roles] ||= (@context['roles'] || read_value('user.roles') || [])
     end
 
     def role_names
-      @role_names ||= roles.nil? ? [] : roles.collect { |r| r.is_a?(Hash) ? r['name'] : r }
+      @token_values[:role_names] ||= roles.nil? ? [] : roles.collect { |r| r.is_a?(Hash) ? r['name'] : r }
     end
 
     def has_role?(name)
@@ -127,17 +128,17 @@ module Elektron
 
     # Returns list of unique region name values found in service catalog
     def available_services_regions
-      unless @regions
-        @regions = []
+      unless @token_values[:regions]
+        @token_values[:regions] = []
         catalog.each do |service|
           next if service['type']=='identity'
           (service['endpoints'] || []).each do |endpoint|
-            @regions << endpoint['region']
+            @token_values[:regions] << endpoint['region']
           end
         end
-        @regions.uniq!
+        @token_values[:regions].uniq!
       end
-      @regions
+      @token_values[:regions]
     end
 
     protected

@@ -40,13 +40,6 @@ module Elektron
       @token
     end
 
-    # def catalog
-    #   enforce_valid_token
-    #   super
-    # end
-
-    protected
-
     def enforce_valid_token
       return true unless expired?
 
@@ -60,6 +53,8 @@ module Elektron
       authenticate
     end
 
+    protected
+    
     def authenticate
       auth = @auth_class.new(@auth_conf, @options)
       current_context(auth.context)

@@ -1,10 +1,29 @@
 describe Elektron::TokenContext do
-  let(:token_context) {
-    Class.new {
+  let(:token_context) do
+    Class.new do
       include Elektron::TokenContext
-      def initialize; current_context(ScopedTokenContext.context); end
-    }.new()
-  }
+      def initialize
+        current_context(ScopedTokenContext.context)
+      end
+    end.new
+  end
+
+  describe '#current_context' do
+    it 'should cache value' do
+      user_name = token_context.user_name
+      expect(
+        token_context.instance_variable_get(:@token_values)[:user_name]
+      ).to eq(user_name)
+    end
+
+    it 'should reset token context' do
+      token_context.user_name
+      token_context.current_context(ScopedTokenContext.context)
+      expect(
+        token_context.instance_variable_get(:@token_values)[:user_name]
+      ).to be(nil)
+    end
+  end
 
   describe 'available methods' do
     it 'responds to is_admin_project?' do
@@ -113,7 +132,7 @@ describe Elektron::TokenContext do
     let(:context) {
       token_context.instance_variable_get(:@context)
     }
-    
+
     shared_examples 'boolean token attribute' do |method, token_key|
       it 'returns a boolean value' do
         expect(
