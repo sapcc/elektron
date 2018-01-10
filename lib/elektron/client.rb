@@ -41,8 +41,8 @@ module Elektron
       key = "#{name}_#{options}"
       raise Elektron::Errors::ServiceUnavailable, name unless service?(name)
       @services[key] ||= Service.new(name,
-                                      @auth_session,
-                                      @options.clone.merge(options))
+                                     @auth_session,
+                                     @options.clone.merge(options))
     end
   end
 end
