@@ -38,6 +38,8 @@ module Elektron
     def token
       enforce_valid_token
       @token
+    rescue Elektron::Errors::TokenExpired
+      nil
     end
 
     # def catalog
@@ -51,6 +53,9 @@ module Elektron
       return true unless expired?
 
       unless @auth_class
+        # session was created by given token context.
+        # In this case there are no user credentials provided and token
+        # cannot be renewed automatically.
         raise Elektron::Errors::TokenExpired, 'token has been expired'
       end
       # reauthenticate
