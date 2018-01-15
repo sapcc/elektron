@@ -23,12 +23,12 @@ module Elektron
 
     def initialize(auth_conf, options = {})
       @auth_conf = auth_conf
-      @options = options
+      @options = {}.merge(options)
       if @auth_conf[:token_context] && @auth_conf[:token]
         current_context(@auth_conf[:token_context])
         @token = @auth_conf[:token]
       else
-        version = self.class.version(auth_conf, options)
+        version = self.class.version(auth_conf, @options)
         raise Elektron::Errors::UnknownIdentityVersion unless version
         @auth_class ||= Object.const_get("Elektron::Auth::#{version}")
         authenticate
@@ -54,7 +54,7 @@ module Elektron
     end
 
     protected
-    
+
     def authenticate
       auth = @auth_class.new(@auth_conf, @options)
       current_context(auth.context)

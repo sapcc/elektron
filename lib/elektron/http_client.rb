@@ -27,14 +27,15 @@ module Elektron
     def initialize(url, options = {})
       uri = URI.parse(url)
       options = options.clone
+      options_headers = (options.delete(:headers) || {})
+      @headers = {}.merge(DEFAULT_HEADERS).merge(options_headers)
 
-      @headers = DEFAULT_HEADERS.clone.merge(options.delete(:headers) || {})
       @connection = Net::HTTP.new(uri.host, uri.port, :ENV)
 
       http_options = {}.merge(DEFAULT_OPTIONS)
 
       verify_ssl = options.fetch(:client, {}).delete(:verify_ssl) != false
-      
+
       if uri.scheme == 'https'
         http_options[:use_ssl] = true
         if verify_ssl == false

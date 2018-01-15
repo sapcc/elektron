@@ -7,7 +7,7 @@ module Elektron
 
       def initialize(auth_conf, options = {})
         @auth_conf = auth_conf
-        @options = options
+        @options = {}.merge(options)
         @client = Elektron::HttpClient.new(auth_conf[:url], @options)
 
         # validate or create token context
