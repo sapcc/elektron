@@ -25,13 +25,14 @@ module Elektron
       debug: false
     }.freeze
 
-    def initialize(auth_conf, options)
+    def initialize(auth_conf, options = {})
       # make auth_conf accessible via symbols and strings
       auth_conf = with_indifferent_access(auth_conf)
       # make options accessible via symbols and strings
       options = with_indifferent_access(options)
+      default_options = deep_merge({}, DEFAULT_OPTIONS)
 
-      @options = deep_merge({}.merge(DEFAULT_OPTIONS), options)
+      @options = deep_merge(default_options, options)
       @auth_session = Elektron::AuthSession.new(auth_conf, @options)
       @services = {}
     end
@@ -42,7 +43,7 @@ module Elektron
       raise Elektron::Errors::ServiceUnavailable, name unless service?(name)
       @services[key] ||= Service.new(name,
                                      @auth_session,
-                                     @options.clone.merge(options))
+                                     deep_merge(@options, options))
     end
   end
 end

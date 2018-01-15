@@ -2,12 +2,15 @@ require 'uri'
 require 'json'
 require 'net/http'
 require_relative './utils/uri_helper'
+require_relative './utils/hashmap_helper'
 require_relative './errors/api_response'
 require_relative './version'
 
 module Elektron
   # http client
   class HttpClient
+    include Utils
+    
     # Content-types
     CONTENT_TYPE_JSON = 'application/json'.freeze
     CONTENT_TYPE_FORM = 'application/x-www-form-urlencoded'.freeze
@@ -26,10 +29,9 @@ module Elektron
 
     def initialize(url, options = {})
       uri = URI.parse(url)
-      options = options.clone
+      options = deep_merge({}, options) # important: create a deep copy of options!
       options_headers = (options.delete(:headers) || {})
-      @headers = {}.merge(DEFAULT_HEADERS).merge(options_headers)
-
+      @headers = deep_merge({}, DEFAULT_HEADERS).merge(options_headers)
       @connection = Net::HTTP.new(uri.host, uri.port, :ENV)
 
       http_options = {}.merge(DEFAULT_OPTIONS)

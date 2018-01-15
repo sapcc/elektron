@@ -4,11 +4,13 @@ require_relative './auth/v3'
 require_relative './auth/token_context'
 require_relative './errors/unknown_identity_version'
 require_relative './errors/token_expired'
+require_relative './utils/hashmap_helper'
 
 module Elektron
   # Abstract class
   class AuthSession
     include Elektron::TokenContext
+    include Utils
 
     VERSIONS = %w[V2 V3].freeze
 
@@ -23,7 +25,7 @@ module Elektron
 
     def initialize(auth_conf, options = {})
       @auth_conf = auth_conf
-      @options = {}.merge(options)
+      @options = deep_merge({}, options)
       if @auth_conf[:token_context] && @auth_conf[:token]
         current_context(@auth_conf[:token_context])
         @token = @auth_conf[:token]
