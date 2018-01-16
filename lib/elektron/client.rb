@@ -6,7 +6,7 @@ require_relative './errors/service_unavailable'
 module Elektron
   # Entry point
   class Client
-    include Utils
+    include Utils::HashmapHelper
     extend Forwardable
 
     def_delegators :@auth_session, :is_admin_project?, :user_id, :user_name,
@@ -27,10 +27,11 @@ module Elektron
 
     def initialize(auth_conf, options = {})
       # make auth_conf accessible via symbols and strings
-      auth_conf = with_indifferent_access(auth_conf)
+      auth_conf = with_indifferent_access(clone_hash(auth_conf))
       # make options accessible via symbols and strings
       options = with_indifferent_access(options)
-      default_options = deep_merge({}, DEFAULT_OPTIONS)
+      # important: clone DEFAULT_OPTIONS
+      default_options = clone_hash(DEFAULT_OPTIONS)
 
       @options = deep_merge(default_options, options)
       @auth_session = Elektron::AuthSession.new(auth_conf, @options)

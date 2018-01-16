@@ -10,7 +10,7 @@ module Elektron
   # Abstract class
   class AuthSession
     include Elektron::TokenContext
-    include Utils
+    include Utils::HashmapHelper
 
     VERSIONS = %w[V2 V3].freeze
 
@@ -24,8 +24,8 @@ module Elektron
     end
 
     def initialize(auth_conf, options = {})
-      @auth_conf = auth_conf
-      @options = deep_merge({}, options)
+      @auth_conf = clone_hash(auth_conf)
+      @options = deep_merge({}, clone_hash(options))
       if @auth_conf[:token_context] && @auth_conf[:token]
         current_context(@auth_conf[:token_context])
         @token = @auth_conf[:token]

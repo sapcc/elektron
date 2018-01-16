@@ -9,8 +9,8 @@ require_relative './version'
 module Elektron
   # http client
   class HttpClient
-    include Utils
-    
+    include Utils::HashmapHelper
+
     # Content-types
     CONTENT_TYPE_JSON = 'application/json'.freeze
     CONTENT_TYPE_FORM = 'application/x-www-form-urlencoded'.freeze
@@ -29,12 +29,15 @@ module Elektron
 
     def initialize(url, options = {})
       uri = URI.parse(url)
-      options = deep_merge({}, options) # important: create a deep copy of options!
+      # important: create a deep copy of options!
+      options = clone_hash(options)
+      default_headers = clone_hash(DEFAULT_HEADERS)
       options_headers = (options.delete(:headers) || {})
-      @headers = deep_merge({}, DEFAULT_HEADERS).merge(options_headers)
+
+      @headers = default_headers.merge(options_headers)
       @connection = Net::HTTP.new(uri.host, uri.port, :ENV)
 
-      http_options = {}.merge(DEFAULT_OPTIONS)
+      http_options = clone_hash(DEFAULT_OPTIONS)
 
       verify_ssl = options.fetch(:client, {}).delete(:verify_ssl) != false
 

@@ -6,8 +6,8 @@ require_relative './errors/bad_middleware'
 
 module Elektron
   class Service
-    include UriHelper
-    include Utils
+    include Utils::UriHelper
+    include Utils::HashmapHelper
 
     class ApiResponse
       extend Forwardable
@@ -52,7 +52,7 @@ module Elektron
     def initialize(name, auth_session, options = {})
       @name = name
       @auth_session = auth_session
-      @options = deep_merge({}, options)
+      @options = clone_hash(options)
       @options[:headers] ||= {}
       @path_prefix = @options.delete(:path_prefix)
       @middlewares = []
@@ -184,7 +184,7 @@ module Elektron
       token = @auth_session.token
       # caching
       if @service_url != service_url || @token != token
-        options = deep_merge({}, @options)
+        options = clone_hash(@options)
         options[:headers]['X-Auth-Token'] = token
         @client = Elektron::HttpClient.new(service_url, options)
         @service_url = service_url

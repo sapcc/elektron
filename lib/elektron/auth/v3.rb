@@ -4,13 +4,13 @@ require_relative '../utils/hashmap_helper'
 module Elektron
   module Auth
     class V3
-      include Utils
+      include Utils::HashmapHelper
 
       attr_reader :context, :token_value
 
       def initialize(auth_conf, options = {})
-        @auth_conf = auth_conf
-        @options = deep_merge({}, options)
+        @auth_conf = clone_hash(auth_conf)
+        @options = clone_hash(options)
         @client = Elektron::HttpClient.new(auth_conf[:url], @options)
 
         # validate or create token context
