@@ -154,10 +154,10 @@ module Elektron
     def perform(request)
       # Actually make the request.
       # start http session
-      response = begin
-        # start
-        @connection.request(request)
-        # finish
+      begin
+        start
+        response = @connection.request(request)
+        finish
       rescue => e
         raise ::Elektron::Errors::Request, e
       # ensure
