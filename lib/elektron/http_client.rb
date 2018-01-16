@@ -3,7 +3,7 @@ require 'json'
 require 'net/http'
 require_relative './utils/uri_helper'
 require_relative './utils/hashmap_helper'
-require_relative './errors/general'
+require_relative './errors/request'
 require_relative './errors/api_response'
 require_relative './version'
 
