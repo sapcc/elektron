@@ -1,8 +1,9 @@
 require 'json'
+require_relative './general'
 
 module Elektron
   module Errors
-    class ApiResponse < StandardError
+    class ApiResponse < ::Elektron::Errors::General
       attr_reader :response, :messages, :code, :code_type, :error_type
 
       def initialize(response)

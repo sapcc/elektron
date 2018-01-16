@@ -1,6 +1,7 @@
+require_relative './general'
+
 module Elektron
   module Errors
-    class BadMiddleware < StandardError
-    end
+    class BadMiddleware < ::Elektron::Errors::General; end
   end
 end

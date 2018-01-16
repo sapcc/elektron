@@ -3,6 +3,7 @@ require 'json'
 require 'net/http'
 require_relative './utils/uri_helper'
 require_relative './utils/hashmap_helper'
+require_relative './errors/general'
 require_relative './errors/api_response'
 require_relative './version'
 
@@ -153,10 +154,16 @@ module Elektron
     def perform(request)
       # Actually make the request.
       # start http session
-      #start
-      response = @connection.request(request)
+      response = begin
+        # start
+        @connection.request(request)
+        # finish
+      rescue => e
+        raise ::Elektron::Errors::Request, e
+      # ensure
+      #   finish
+      end
       # close http session
-      #finish
 
       # byebug
       raise ::Elektron::Errors::ApiResponse, response if response.code.to_i >= 400

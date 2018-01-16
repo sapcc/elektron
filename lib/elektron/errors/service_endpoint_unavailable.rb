@@ -1,5 +1,7 @@
+require_relative './general'
+
 module Elektron
   module Errors
-    class ServiceEndpointUnavailable < StandardError; end
+    class ServiceEndpointUnavailable < ::Elektron::Errors::General; end
   end
 end
