@@ -29,56 +29,25 @@ module Elektron
     }.freeze
 
     def initialize(url, options = {})
-      uri = URI.parse(url)
+      @uri = URI.parse(url)
       # important: create a deep copy of options!
       options = clone_hash(options)
       default_headers = clone_hash(DEFAULT_HEADERS)
       options_headers = (options.delete(:headers) || {})
 
       @headers = default_headers.merge(options_headers)
-      @connection = Net::HTTP.new(uri.host, uri.port, :ENV)
-
-      http_options = clone_hash(DEFAULT_OPTIONS)
+      @http_options = clone_hash(DEFAULT_OPTIONS)
 
       verify_ssl = options.fetch(:client, {}).delete(:verify_ssl) != false
-
-      if uri.scheme == 'https'
-        http_options[:use_ssl] = true
+      if @uri.scheme == 'https'
+        @http_options[:use_ssl] = true
         if verify_ssl == false
-          http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE
+          @http_options[:verify_mode] = OpenSSL::SSL::VERIFY_NONE
         end
       end
 
-      http_options.merge!(options[:client]) if options[:client]
-      # set attributes
-      http_options.each { |key, value| @connection.send("#{key}=", value) }
-
-      return unless options[:debug]
-      @connection.set_debug_output($stdout)
-    end
-
-    # Open a connection for multiple calls.
-    # - Accepts a block, otherwise just opens the connection.
-    # - You'll need to close the connection if you just open it.
-    def start
-      if block_given?
-        # Open the connection.
-        @connection.start unless @connection.started?
-
-        # Yield to the calling block.
-        yield(self)
-
-        # Clean up the connection.
-        @connection.finish if @connection.started?
-      else
-        # Open the connection.
-        @connection.start unless @connection.started?
-      end
-    end
-
-    # Clean up the connection if needed.
-    def finish
-      @connection.finish if @connection.started?
+      @http_options.merge!(options[:client]) if options[:client]
+      @debug = options[:debug]
     end
 
     ############ REQUESTS ############
@@ -109,7 +78,7 @@ module Elektron
 
     # PATCH
     def patch(path, *args)
-      data = args.length > 0 ? args[0] : {}
+      data = args.empty? ? {} : args[0]
       headers = args.length > 1 ? args[1] : {}
       headers = { 'Content-Type' => CONTENT_TYPE_JSON }.merge(@headers)
                                                        .merge(headers)
@@ -122,7 +91,7 @@ module Elektron
 
     # POST
     def post(path, *args)
-      data = args.length > 0 ? args[0] : {}
+      data = args.empty? ? {} : args[0]
       headers = args.length > 1 ? args[1] : {}
       headers = { 'Content-Type' => CONTENT_TYPE_JSON }.merge(@headers)
                                                        .merge(headers)
@@ -136,7 +105,7 @@ module Elektron
 
     # PUT
     def put(path, *args)
-      data = args.length > 0 ? args[0] : {}
+      data = args.empty? ? {} : args[0]
       headers = args.length > 1 ? args[1] : {}
       headers = { 'Content-Type' => CONTENT_TYPE_JSON }.merge(@headers)
                                                        .merge(headers)
@@ -150,37 +119,28 @@ module Elektron
 
     protected
 
-    # Perform the request.
     def perform(request)
-      # Actually make the request.
-      # start http session
-      begin
-        start
-        response = @connection.request(request)
-        finish
-      rescue => e
-        raise ::Elektron::Errors::Request, e
-      # ensure
-      #   finish
-      end
-      # close http session
+      http = Net::HTTP.new(@uri.host, @uri.port, :ENV)
+      @http_options.each { |key, value| http.send("#{key}=", value) }
+      http.set_debug_output($stdout) if @debug
 
-      # byebug
-      raise ::Elektron::Errors::ApiResponse, response if response.code.to_i >= 400
-      parse(response)
+      response = http.start { |connection| connection.request(request) }
+    rescue StandardError => e
+      raise ::Elektron::Errors::Request, e
+    else
+      return parse(response) if response.code.to_i < 400
+      raise ::Elektron::Errors::ApiResponse, response
     end
 
     def parse(response)
-      # Parse the response as JSON if possible.
       if response.body && response.content_type == CONTENT_TYPE_JSON
-        response.body = begin
-                          JSON.parse(response.body)
-                        rescue JSON::ParserError => _e
-                          # do nothing
-                          response.body
-                        end
+        # Parse the response as JSON if possible.
+        response.body = JSON.parse(response.body)
       end
       response
+    rescue JSON::ParserError
+      # do nothing
+      return response
     end
 
     def json?(string)
