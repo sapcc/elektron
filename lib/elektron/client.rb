@@ -44,7 +44,7 @@ module Elektron
       raise Elektron::Errors::ServiceUnavailable, name unless service?(name)
       @services[key] ||= Service.new(name,
                                      @auth_session,
-                                     deep_merge(@options, options))
+                                     deep_merge(clone_hash(@options), options))
     end
   end
 end
