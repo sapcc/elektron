@@ -1,12 +1,20 @@
 describe Elektron::HttpClient do
-  url = 'https://auth_url.com'
+  url = 'https://testurl.com'
 
   before(:each) do
     allow_any_instance_of(Net::HTTP).to receive(:request)
       .and_return(double('response', code: 200).as_null_object)
+
+    @connection = double('connection').as_null_object
+    allow_any_instance_of(Net::HTTP).to receive(:start).and_yield(@connection)
   end
 
   describe '::new' do
+    before :each do
+      @conn = double('connection').as_null_object
+      allow(Net::HTTP).to receive(:new).and_return(@conn)
+    end
+
     it 'should raise an argument error' do
       expect {
         Elektron::HttpClient.new
@@ -18,14 +26,16 @@ describe Elektron::HttpClient do
     end
 
     it 'should create a new net/http object' do
-      expect(Net::HTTP).to receive(:new).with('auth_url.com', 443, anything).and_call_original
-      Elektron::HttpClient.new('https://auth_url.com')
+      expect(Net::HTTP).to receive(:new).with('testurl.com', 443, anything).and_call_original
+      Elektron::HttpClient.new('https://testurl.com').get('path')
     end
 
     it 'should set default keep alive timeout' do
       client = Elektron::HttpClient.new(url)
-      expect(client.instance_variable_get(:@connection).keep_alive_timeout)
-        .to eq(Elektron::HttpClient::DEFAULT_OPTIONS[:keep_alive_timeout])
+      expect(@conn).to receive(:keep_alive_timeout=).with(
+        Elektron::HttpClient::DEFAULT_OPTIONS[:keep_alive_timeout]
+      )
+      client.get('path')
     end
 
     context 'options are given' do
@@ -46,7 +56,8 @@ describe Elektron::HttpClient do
       end
 
       it 'create a new http client with options' do
-        expect(client.instance_variable_get(:@connection).use_ssl?).to eq(true)
+        expect(@conn).to receive(:use_ssl=).with(true)
+        client.get('path')
       end
 
       context 'use ssl is false' do
@@ -57,7 +68,8 @@ describe Elektron::HttpClient do
         }
 
         it 'should disable ssl' do
-          expect(client.instance_variable_get(:@connection).use_ssl?).to eq(false)
+          expect(@conn).to receive(:use_ssl=).with(false)
+          client.get('path')
         end
       end
 
@@ -69,8 +81,8 @@ describe Elektron::HttpClient do
         }
 
         it 'should set keep_alive_timeout to 0' do
-          expect(client.instance_variable_get(:@connection).keep_alive_timeout)
-            .to eq(0)
+          expect(@conn).to receive(:keep_alive_timeout=).with(0)
+          client.get('path')
         end
       end
     end
@@ -79,7 +91,6 @@ describe Elektron::HttpClient do
   shared_examples 'request' do |request_class, method|
     before :each do
       @client = Elektron::HttpClient.new(url)
-      @connection = @client.instance_variable_get(:@connection)
       allow(request_class).to receive(:new).and_call_original
       @client.send(method, 'test')
     end
@@ -111,7 +122,6 @@ describe Elektron::HttpClient do
   shared_examples 'request without params and data' do |request_class, method|
     before :each do
       @client = Elektron::HttpClient.new(url)
-      @connection = @client.instance_variable_get(:@connection)
       @request = double(request_class.name).as_null_object
       allow(request_class).to receive(:new).and_return @request
     end
@@ -140,7 +150,6 @@ describe Elektron::HttpClient do
         @client_headers = { 'X-Client-Header' => 'Client Header' }
         @request_headers = { 'X-Post-Request' => 'Post Request' }
         @client = Elektron::HttpClient.new(url, headers: @client_headers)
-        @connection = @client.instance_variable_get(:@connection)
         @request = double('post request').as_null_object
         allow(request_class).to receive(:new).and_return @request
         @client.send(method, 'test', @request_headers)
@@ -159,7 +168,6 @@ describe Elektron::HttpClient do
   shared_examples 'request with data' do |request_class, method|
     before :each do
       @client = Elektron::HttpClient.new(url)
-      @connection = @client.instance_variable_get(:@connection)
       @request = double(request_class.name).as_null_object
       allow(request_class).to receive(:new).and_return @request
     end
@@ -300,40 +308,9 @@ describe Elektron::HttpClient do
     it_behaves_like 'request without params and data', Net::HTTP::Options, :options
   end
 
-  describe '#start' do
-    before :each do
-      @client = Elektron::HttpClient.new(url)
-      @connection = @client.instance_variable_get(:@connection)
-      allow(@connection).to receive(:finish)
-      allow(@connection).to receive(:connect).and_return true
-    end
-
-    it 'should call start on connection' do
-      expect(@connection).to receive(:start)
-      @client.start
-    end
-
-    it 'should execute block' do
-      expect(@connection).to receive(:start).and_call_original
-      expect(@connection).to receive(:request).with(
-        an_instance_of(Net::HTTP::Get)
-      ).and_return(double('response', code: 200).as_null_object)
-      expect(@connection).to receive(:request).with(
-        an_instance_of(Net::HTTP::Post)
-      ).and_return(double('response', code: 200).as_null_object)
-      expect(@connection).to receive(:finish)
-
-      @client.start do |client|
-        client.get('test')
-        client.post('test')
-      end
-    end
-  end
-
   describe '#perform' do
     before :each do
       @client = Elektron::HttpClient.new(url)
-      @connection = @client.instance_variable_get(:@connection)
     end
 
     context 'should not raise error on valid response' do

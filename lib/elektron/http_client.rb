@@ -123,7 +123,6 @@ module Elektron
       http = Net::HTTP.new(@uri.host, @uri.port, :ENV)
       @http_options.each { |key, value| http.send("#{key}=", value) }
       http.set_debug_output($stdout) if @debug
-
       response = http.start { |connection| connection.request(request) }
     rescue StandardError => e
       raise ::Elektron::Errors::Request, e
