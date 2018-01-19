@@ -12,7 +12,7 @@ module Elektron
     class ApiResponse
       extend Forwardable
       attr_reader :data
-      def_delegators :@response, :body, :[]
+      def_delegators :@response, :body, :[], :header
 
       def initialize(response)
         @response = response
