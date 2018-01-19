@@ -84,7 +84,7 @@ module Elektron
                                                        .merge(headers)
       request = Net::HTTP::Patch.new(path, headers)
       if data && !data.empty?
-        request.body = json?(data) ? data : JSON.generate(data)
+        request.body = encode_data(headers['Content-Type'], data)
       end
       perform(request)
     end
@@ -95,10 +95,9 @@ module Elektron
       headers = args.length > 1 ? args[1] : {}
       headers = { 'Content-Type' => CONTENT_TYPE_JSON }.merge(@headers)
                                                        .merge(headers)
-
       request = Net::HTTP::Post.new(path, headers)
       if data && !data.empty?
-        request.body = json?(data) ? data : JSON.generate(data)
+        request.body = encode_data(headers['Content-Type'], data)
       end
       perform(request)
     end
@@ -109,15 +108,19 @@ module Elektron
       headers = args.length > 1 ? args[1] : {}
       headers = { 'Content-Type' => CONTENT_TYPE_JSON }.merge(@headers)
                                                        .merge(headers)
-
       request = Net::HTTP::Put.new(path, headers)
       if data && !data.empty?
-        request.body = json?(data) ? data : JSON.generate(data)
+        request.body = encode_data(headers['Content-Type'], data)
       end
       perform(request)
     end
 
     protected
+
+    def encode_data(content_type, data)
+      return data unless content_type == CONTENT_TYPE_JSON
+      json?(data) ? data : JSON.generate(data)
+    end
 
     def perform(request)
       http = Net::HTTP.new(@uri.host, @uri.port, :ENV)
