@@ -79,6 +79,10 @@ module Elektron
       perform_request(:get, path, args)
     end
 
+    def head(path, *args)
+      perform_request(:head, path, args)
+    end
+
     def post(path, *args)
       data = yield if block_given?
       perform_request(:post, path, args, data)
