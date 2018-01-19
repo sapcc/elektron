@@ -70,6 +70,12 @@ module Elektron
       perform(Net::HTTP::Head.new(path, headers))
     end
 
+    # COPY
+    def copy(path, headers = {})
+      headers = {}.merge(@headers).merge(headers)
+      perform(Net::HTTP::Copy.new(path, headers))
+    end
+
     # OPTIONS
     def options(path, headers = {})
       headers = {}.merge(@headers).merge(headers)
