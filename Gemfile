@@ -15,4 +15,6 @@ gemspec
 
 group :test do
   gem 'rspec-rails'
+  gem 'guard'
+  gem 'guard-rspec'
 end

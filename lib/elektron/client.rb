@@ -2,6 +2,10 @@ require_relative './auth_session'
 require_relative './service'
 require_relative './utils/hashmap_helper'
 require_relative './errors/service_unavailable'
+require_relative './middlewares/stack'
+require_relative './middlewares/http_request_performer'
+require_relative './middlewares/response_handler'
+require_relative './middlewares/response_error_handler'
 
 module Elektron
   # Entry point
@@ -21,7 +25,8 @@ module Elektron
       # version: 'V3',
       headers: {},
       interface: 'internal',
-      client: {},
+      region: nil,
+      http_client: {},
       debug: false
     }.freeze
 
@@ -36,6 +41,11 @@ module Elektron
       @options = deep_merge(default_options, options)
       @auth_session = Elektron::AuthSession.new(auth_conf, @options)
       @services = {}
+
+      @middlewares = Elektron::Middlewares::Stack.new
+      @middlewares.add(Elektron::Middlewares::HttpRequestPerformer)
+      @middlewares.add(Elektron::Middlewares::ResponseErrorHandler)
+      @middlewares.add(Elektron::Middlewares::ResponseHandler)
     end
 
     def service(name, options = {})
@@ -44,7 +54,16 @@ module Elektron
       raise Elektron::Errors::ServiceUnavailable, name unless service?(name)
       @services[key] ||= Service.new(name,
                                      @auth_session,
-                                     deep_merge(clone_hash(@options), options))
+                                     @middlewares,
+                                     service_options(options))
+    end
+
+    def service_options(options)
+      # merge service options with request options
+      # This allows to overwrite all options by single request
+      default_options_keys = @options.keys
+      options.select! { |k, _| default_options_keys.include?(k) }
+      deep_merge(clone_hash(@options), options)
     end
   end
 end

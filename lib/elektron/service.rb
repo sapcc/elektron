@@ -6,73 +6,16 @@ require_relative './errors/bad_middleware'
 
 module Elektron
   class Service
-    include Utils::UriHelper
     include Utils::HashmapHelper
-
-    class ApiResponse
-      extend Forwardable
-      attr_reader :data
-      def_delegators :@response, :body, :[], :header
-
-      def initialize(response)
-        @response = response
-        @data = response.body
-      end
-
-      # This method is used to map raw data to a Object.
-      def map_to(key_class_map, options = {})
-        key = key_class_map
-        klass = nil
-        if key_class_map.is_a?(Hash)
-          key = key_class_map.keys.first
-          klass = key_class_map.values.first
-        end
-
-        key_tokens = key.split('.')
-        key_tokens.shift if key_tokens[0] == 'body'
-        data = @response.body
-        key_tokens.each { |k| data = data[k] }
-
-        if data.is_a?(Array)
-          data.collect do |item|
-            params = item.merge(options)
-            block_given? ? yield(params) : klass.new(params)
-          end
-        elsif data.is_a?(Hash)
-          params = data.merge(options)
-          block_given? ? yield(params) : klass.new(params)
-        else
-          data
-        end
-      end
-    end
 
     attr_reader :name
 
-    def initialize(name, auth_session, options = {})
+    def initialize(name, auth_session, middlewares, options = {})
       @name = name
       @auth_session = auth_session
       @options = clone_hash(options)
-      @options[:headers] ||= {}
-      @path_prefix = @options.delete(:path_prefix)
-      @middlewares = []
-    end
-
-    def add_middleware(middleware = nil, &block)
-      middleware = block if middleware.nil?
-      if middleware.is_a?(Class) && !middleware.respond_to?(:call)
-        middleware = middleware.new
-      end
-
-      unless middleware.respond_to?(:call)
-        raise Elektron::Errors::BadMiddleware, 'Middleware does not respond to '\
-                                               'call method! Please provide a '\
-                                               'proc or an object with a call '\
-                                               'method which accepts three '\
-                                               'parameters "params", "options" '\
-                                               'and "data"'
-      end
-      @middlewares << middleware && true
+      @middlewares = middlewares.clone
+      @cache = {}
     end
 
     def get(path, *args)
@@ -110,10 +53,7 @@ module Elektron
       perform_request(:options, path, args)
     end
 
-    def endpoint_url(options = {})
-      region = (options[:region] || @options[:region])
-      interface = (options[:interface] || @options[:interface])
-
+    def endpoint_url(region: nil, interface: nil)
       endpoint = @auth_session.service_url(
         @name, region: region, interface: interface
       )
@@ -126,79 +66,59 @@ module Elektron
 
     private
 
-    def perform_request(method, path, request_args, data=nil)
+    def perform_request(method, path, request_args, data = nil)
       params, options = get_params_and_options(request_args)
+      service_url = endpoint_url(region: options[:region],
+                                 interface: options[:interface])
+      uri = URI(service_url)
+      service_url = "#{uri.scheme}://#{uri.host}"
+      path_prefix = options[:path_prefix] || uri.path
+      path = extend_path(path, path_prefix)
+      extend_headers(options)
 
-      @middlewares.each do |middleware|
-        result = middleware.call(params, options, data)
-        if !result.is_a?(Array) || result.length != 3
-          raise ::Elektron::Errors::BadMiddleware, 'Middleware must return an '\
-                                                   'array of three values, '\
-                                                   'params", "options" '\
-                                                   'and "data"'
-        end
-        params, options, data = result
-      end
-
-      # it is allowed to provide options via params,
-      # so check both options and params
-      path_prefix = options.delete(:path_prefix) || params.delete(:path_prefix)
-      headers = options.delete(:headers) || params.delete(:headers) || {}
-
-      region = options.delete(:region) || params.delete(:region)
-      interface = options.delete(:interface) || params.delete(:interface)
-      service_url = endpoint_url(region: region, interface: interface)
-      path = full_path(service_url, path, params, path_prefix)
-
-      handle_response do
-        if %i[post put patch].include?(method)
-          http_client(service_url).send(method, path, data, headers)
-        else
-          http_client(service_url).send(method, path, headers)
-        end
-      end
+      request_context = Elektron::RequestContext.new(
+        service_name: @name, service_url: service_url,
+        http_method: method, path: path, params: params,
+        options: options, data: data, cache: @cache
+      )
+      @middlewares.execute(request_context)
     end
 
-    def handle_response(response = nil)
-      response = yield if block_given?
-      ApiResponse.new(response)
+    def extend_headers(options)
+      options[:headers] ||= {}
+      token = @auth_session.token
+      return unless token
+      options[:headers]['X-Auth-Token'] = token
     end
 
-    def get_params_and_options(args)
-      params = args.length > 0 ? args[0] : {}
-      options = args.length > 1 ? args[1] : {}
-      [params, options]
-    end
-
-    def full_path(service_url, path, params = {}, path_prefix = nil)
+    def extend_path(path, path_prefix = nil)
       if path !~ /https?:\/\/[\S]+/ &&
-         !(path_prefix.nil? && @path_prefix.nil? && path.start_with?('/'))
-
-        path_prefix ||= @path_prefix
-        path_prefix ||= URI(service_url).path
+         !(path_prefix.nil? && path.start_with?('/'))
 
         path = join_path_parts(path_prefix, path) if path_prefix
       end
 
-      url = to_url(path, params)
       if @auth_session.project_id
-        url.gsub!(/:project_id/, @auth_session.project_id)
-        url.gsub!(/:tenant_id/, @auth_session.project_id)
+        path.gsub!(/:project_id/, @auth_session.project_id)
+        path.gsub!(/:tenant_id/, @auth_session.project_id)
       end
-      url
+
+      path
     end
 
-    def http_client(service_url)
-      token = @auth_session.token
-      # caching
-      if @service_url != service_url || @token != token
-        options = clone_hash(@options)
-        options[:headers]['X-Auth-Token'] = token
-        @client = Elektron::HttpClient.new(service_url, options)
-        @service_url = service_url
-        @token = token
+    def get_params_and_options(args)
+      params = args.length.positive? ? args[0] : {}
+      options = args.length > 1 ? args[1] : {}
+
+      # merge service options with request options
+      # This allows to overwrite all options by single request
+      request_options = @options.keys.each_with_object({}) do |key, hash|
+        value = options[key] || params.delete(key)
+        hash[key] = value unless value.nil?
       end
-      @client
+
+      options = deep_merge(clone_hash(@options), request_options)
+      [params, options]
     end
   end
 end
