@@ -14,7 +14,7 @@ module Elektron
 
           @response = response
           data = @response.respond_to?(:body) ? @response.body : @response
-          unless data.is_a?(Hash)
+          if data.is_a?(String)
             data = begin
                      JSON.parse(data)
                    rescue JSON::ParserError => _e
