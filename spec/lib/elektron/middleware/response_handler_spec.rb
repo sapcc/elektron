@@ -3,6 +3,7 @@ describe Elektron::Middlewares::ResponseHandler do
     @response = double(
       'response',
       code: 200,
+      header: {},
       body: {
         'users' => [
           { 'id' => 1, 'name' => 'test1' },
@@ -10,29 +11,35 @@ describe Elektron::Middlewares::ResponseHandler do
         ]
       }
     )
-    @next_app = double('next_app')
-    allow(@next_app).to receive(:call).and_return(@response)
-    @response_handler = Elektron::Middlewares::ResponseHandler.new(@next_app)
-    @metadata = double('metadata').as_null_object
+    @next_middleware = double('next_middleware')
+    allow(@next_middleware).to receive(:call).and_return(@response)
+    @response_handler = Elektron::Middlewares::ResponseHandler.new(@next_middleware)
   end
 
   it 'should return an instance of Response' do
-    expect(@response_handler.call(@metadata, {}, {}, {})).to be_a(
+    expect(@response_handler.call(double('request context'))).to be_a(
       Elektron::Middlewares::ResponseHandler::Response
     )
   end
 
+  it 'should return response header' do
+    expect(@response_handler.call(double('request context')).header).to eq(
+      @response.header
+    )
+  end
+
   it 'should return response body' do
-    expect(@response_handler.call(@metadata, {}, {}, {}).body).to eq(
+    expect(@response_handler.call(double('request context')).body).to eq(
       @response.body
     )
   end
 end
 
 describe Elektron::Middlewares::ResponseHandler::Response do
-  let(:response) do
+  let(:http_response) do
     double(
       'response',
+      header: {},
       body: {
         'users' => [
           { 'id' => 1, 'name' => 'test1' },
@@ -42,11 +49,15 @@ describe Elektron::Middlewares::ResponseHandler::Response do
     )
   end
 
-  let(:api_response) { Elektron::Middlewares::ResponseHandler::Response.new(response) }
+  let(:response) {
+    Elektron::Middlewares::ResponseHandler::Response.new(
+      http_response.header, http_response.body
+    )
+  }
 
   describe '#map_to' do
     context 'map body to an object' do
-      let(:mapped_response) { api_response.map_to('body' => OpenStruct) }
+      let(:mapped_response) { response.map_to('body' => OpenStruct) }
 
       it 'mapped response is an OpenStruct' do
         expect(mapped_response.class).to be(OpenStruct)
@@ -63,7 +74,7 @@ describe Elektron::Middlewares::ResponseHandler::Response do
 
     context 'map body.users to an array of objects' do
       class User < OpenStruct; end
-      let(:mapped_response) { api_response.map_to('body.users' => User) }
+      let(:mapped_response) { response.map_to('body.users' => User) }
 
       it 'mapped response is an Array' do
         expect(mapped_response.class).to be(Array)
@@ -83,7 +94,7 @@ describe Elektron::Middlewares::ResponseHandler::Response do
     end
 
     context 'mapping key does not exist' do
-      let(:mapped_response) { api_response.map_to('body.bad_key' => OpenStruct) }
+      let(:mapped_response) { response.map_to('body.bad_key' => OpenStruct) }
 
       it 'mapped response is an Array' do
         expect(mapped_response).to be(nil)
@@ -93,7 +104,7 @@ describe Elektron::Middlewares::ResponseHandler::Response do
     context 'map using block' do
       class User < OpenStruct; end
       let(:mapped_response) {
-        api_response.map_to('body.users') do |params|
+        response.map_to('body.users') do |params|
           User.new(params)
         end
       }

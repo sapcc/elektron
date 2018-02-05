@@ -1,7 +1,10 @@
+require_relative '../containers/request_context'
+require_relative '../errors/middleware_stack_error'
+
 module Elektron
-  # This class implements the middlware stack which contains methods
-  # like add, remove, replace and execute.
   module Middlewares
+    # This class implements the middlware stack which contains methods
+    # like add, remove, replace and execute.
     class Stack
       class BadMiddlewareError < StandardError; end
 
@@ -74,6 +77,18 @@ module Elektron
 
       # This method executes the middleware stack
       def execute(request_context)
+        if !request_context.is_a?(Hash) &&
+           !request_context.is_a?(Elektron::Containers::RequestContext)
+          raise Elektron::Errors::MiddlewareStackError,
+                'Please provide a hash or request context object'
+        end
+
+        if request_context.is_a?(Hash)
+          request_context = Elektron::Containers::RequestContext.new(
+            request_context
+          )
+        end
+
         previous_middleware = nil
 
         @middlewares.each do |middleware|

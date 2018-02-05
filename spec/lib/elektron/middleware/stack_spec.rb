@@ -184,7 +184,7 @@ describe Elektron::Middlewares::Stack do
       expect(Middleware2).to receive(:new).ordered.and_call_original
       expect(Middleware3).to receive(:new).ordered.and_call_original
 
-      @middlewares.execute(double('request_context').as_null_object)
+      @middlewares.execute({})
     end
 
     it 'should call all middlewares in the correct order' do
@@ -193,7 +193,7 @@ describe Elektron::Middlewares::Stack do
       expect_any_instance_of(Middleware4).to receive(:call).and_call_original
       expect_any_instance_of(Middleware1).to receive(:call).and_call_original
 
-      @middlewares.execute(double('request_context').as_null_object)
+      @middlewares.execute({})
     end
   end
 end

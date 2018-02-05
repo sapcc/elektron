@@ -1,4 +1,3 @@
-require_relative './http_client'
 require_relative './utils/uri_helper'
 require_relative './utils/hashmap_helper'
 require_relative './errors/service_endpoint_unavailable'
@@ -7,8 +6,9 @@ require_relative './errors/bad_middleware'
 module Elektron
   class Service
     include Utils::HashmapHelper
+    include Utils::UriHelper
 
-    attr_reader :name
+    attr_reader :name, :middlewares
 
     def initialize(name, auth_session, middlewares, options = {})
       @name = name
@@ -53,7 +53,7 @@ module Elektron
       perform_request(:options, path, args)
     end
 
-    def endpoint_url(region: nil, interface: nil)
+    def endpoint_url(region: @options[:region], interface: @options[:interface])
       endpoint = @auth_session.service_url(
         @name, region: region, interface: interface
       )
@@ -72,11 +72,14 @@ module Elektron
                                  interface: options[:interface])
       uri = URI(service_url)
       service_url = "#{uri.scheme}://#{uri.host}"
-      path_prefix = options[:path_prefix] || uri.path
+
+      path_prefix = options[:path_prefix]
+      path_prefix = uri.path if path_prefix.nil? || path_prefix.empty?
+
       path = extend_path(path, path_prefix)
       extend_headers(options)
 
-      request_context = Elektron::RequestContext.new(
+      request_context = Elektron::Containers::RequestContext.new(
         service_name: @name, service_url: service_url,
         http_method: method, path: path, params: params,
         options: options, data: data, cache: @cache
@@ -112,7 +115,8 @@ module Elektron
 
       # merge service options with request options
       # This allows to overwrite all options by single request
-      request_options = @options.keys.each_with_object({}) do |key, hash|
+      keys = Elektron::Client::DEFAULT_OPTIONS.keys
+      request_options = keys.each_with_object({}) do |key, hash|
         value = options[key] || params.delete(key)
         hash[key] = value unless value.nil?
       end

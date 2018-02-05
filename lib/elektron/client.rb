@@ -1,4 +1,4 @@
-require_relative './auth_session'
+require_relative './auth/session'
 require_relative './service'
 require_relative './utils/hashmap_helper'
 require_relative './errors/service_unavailable'
@@ -27,7 +27,8 @@ module Elektron
       interface: 'internal',
       region: nil,
       http_client: {},
-      debug: false
+      debug: false,
+      path_prefix: nil
     }.freeze
 
     def initialize(auth_conf, options = {})
@@ -39,13 +40,20 @@ module Elektron
       default_options = clone_hash(DEFAULT_OPTIONS)
 
       @options = deep_merge(default_options, options)
-      @auth_session = Elektron::AuthSession.new(auth_conf, @options)
-      @services = {}
 
-      @middlewares = Elektron::Middlewares::Stack.new
-      @middlewares.add(Elektron::Middlewares::HttpRequestPerformer)
-      @middlewares.add(Elektron::Middlewares::ResponseErrorHandler)
-      @middlewares.add(Elektron::Middlewares::ResponseHandler)
+      @request_performer = Elektron::Middlewares::Stack.new
+      @request_performer.add(Elektron::Middlewares::HttpRequestPerformer)
+      @request_performer.add(Elektron::Middlewares::ResponseErrorHandler)
+      @request_performer.add(Elektron::Middlewares::ResponseHandler)
+
+      @auth_session = Elektron::Auth::Session.new(
+        auth_conf, @request_performer, @options
+      )
+      @services = {}
+    end
+
+    def middlewares
+      @request_performer
     end
 
     def service(name, options = {})
@@ -54,7 +62,7 @@ module Elektron
       raise Elektron::Errors::ServiceUnavailable, name unless service?(name)
       @services[key] ||= Service.new(name,
                                      @auth_session,
-                                     @middlewares,
+                                     @request_performer,
                                      service_options(options))
     end
 

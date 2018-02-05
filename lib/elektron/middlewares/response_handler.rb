@@ -11,15 +11,11 @@ module Elektron
       # holds some usefull infos.
       class Response
         extend Forwardable
-        attr_reader :data, :service_name, :http_method, :path
-        def_delegators :@response, :body, :[], :header
+        attr_reader :body, :header
 
-        def initialize(response, service_name: nil, http_method: nil, path: nil)
-          @response     = response
-          @data         = response.body
-          @service_name = service_name
-          @http_method  = http_method
-          @path         = path
+        def initialize(header, body)
+          @header = header
+          @body   = body
         end
 
         # This method is used to map raw data to a Object.
@@ -33,7 +29,7 @@ module Elektron
 
           key_tokens = key.split('.')
           key_tokens.shift if key_tokens[0] == 'body'
-          data = @response.body
+          data = @body
           key_tokens.each { |k| data = data[k] }
 
           if data.is_a?(Array)
@@ -52,13 +48,9 @@ module Elektron
 
       def call(request_context)
         # get the response from the next middleware in the stack.
-        response = @next_middleware.call(request_context)
-        Response.new(
-          response,
-          service_name: metadata.service_name,
-          http_method: metadata.http_method,
-          path: metadata.path
-        )
+        response = @next_middleware.call(request_context) if @next_middleware
+        return nil unless response
+        Response.new(response.header, response.body)
       end
     end
   end

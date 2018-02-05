@@ -10,26 +10,31 @@ describe Elektron::Middlewares::ResponseErrorHandler do
         ]
       }
     )
-    @next_app = double('next_app')
-    allow(@next_app).to receive(:call).and_return(@response)
-    @response_handler = Elektron::Middlewares::ResponseErrorHandler.new(@next_app)
-    @metadata = double('metadata').as_null_object
+    @next_middleware = double('next_middleware')
+    allow(@next_middleware).to receive(:call).and_return(@response)
+    @response_handler = Elektron::Middlewares::ResponseErrorHandler.new(@next_middleware)
   end
 
   context 'should not raise error on valid response' do
     it 'response 200' do
       allow(@response).to receive(:code).and_return(200)
-      expect{ @response_handler.call(@metadata, {}, {}, {}) }.not_to raise_error
+      expect{
+        @response_handler.call(double('request context'))
+      }.not_to raise_error
     end
 
     it 'response code is 100' do
       allow(@response).to receive(:code).and_return(100)
-      expect{ @response_handler.call(@metadata, {}, {}, {}) }.not_to raise_error
+      expect{
+        @response_handler.call(double('request context'))
+      }.not_to raise_error
     end
 
     it 'response code is 300' do
       allow(@response).to receive(:code).and_return(300)
-      expect{ @response_handler.call(@metadata, {}, {}, {}) }.not_to raise_error
+      expect{
+        @response_handler.call(double('request context'))
+      }.not_to raise_error
     end
   end
 
@@ -37,7 +42,7 @@ describe Elektron::Middlewares::ResponseErrorHandler do
     it 'raises error on response code 400' do
       allow(@response).to receive(:code).and_return(400)
       expect{
-        @response_handler.call(@metadata, {}, {}, {})
+        @response_handler.call(double('request context').as_null_object)
       }.to raise_error Elektron::Errors::ApiResponse
     end
   end

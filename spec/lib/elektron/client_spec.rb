@@ -7,15 +7,24 @@ describe Elektron::Client do
     domain_name: 'Default'
   }
 
-  options = {region: 'RegionOne', interface: 'public', debug: false}
+  let(:request_performer) {
+    double('middlewares stack').as_null_object
+  }
+
+  options = {
+    region: 'RegionOne', interface: 'public', debug: false,
+    headers: {}, http_client: {}, path_prefix: nil
+  }
+
   describe '::new' do
     before :each do
-      allow(Elektron::AuthSession).to receive(:new)
+      allow(Elektron::Auth::Session).to receive(:new)
       @client = Elektron.client(auth_conf, options)
     end
+
     it 'crates a new instance of auth session' do
-      expect(Elektron::AuthSession).to have_received(:new).with(
-        auth_conf, options.merge(headers: {}, client: {})
+      expect(Elektron::Auth::Session).to have_received(:new).with(
+        auth_conf, kind_of(Elektron::Middlewares::Stack), options
       )
     end
 

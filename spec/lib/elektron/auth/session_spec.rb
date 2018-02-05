@@ -1,8 +1,16 @@
-describe Elektron::AuthSession do
+describe Elektron::Auth::Session do
   auth_conf = {
     user_name: 'test',
     password: 'test',
     user_domain_name: 'Default'
+  }
+
+  let(:request_performer) {
+    request_performer = Elektron::Middlewares::Stack.new
+    request_performer.add(Elektron::Middlewares::HttpRequestPerformer)
+    request_performer.add(Elektron::Middlewares::ResponseErrorHandler)
+    request_performer.add(Elektron::Middlewares::ResponseHandler)
+    request_performer
   }
 
   before :each do
@@ -15,19 +23,19 @@ describe Elektron::AuthSession do
   describe '::version' do
     context 'version is given via options' do
       it 'should return V2' do
-        expect(Elektron::AuthSession.version(auth_conf, version: 'v2')).to eq('V2')
+        expect(Elektron::Auth::Session.version(auth_conf, version: 'v2')).to eq('V2')
       end
 
       it 'should accept a symbol' do
-        expect(Elektron::AuthSession.version(auth_conf, version: :v2)).to eq('V2')
+        expect(Elektron::Auth::Session.version(auth_conf, version: :v2)).to eq('V2')
       end
 
       it 'should return V3' do
-        expect(Elektron::AuthSession.version(auth_conf, version: 'v3')).to eq('V3')
+        expect(Elektron::Auth::Session.version(auth_conf, version: 'v3')).to eq('V3')
       end
 
       it 'should return default version' do
-        expect(Elektron::AuthSession.version(auth_conf, version: 'v4')).to eq('V3')
+        expect(Elektron::Auth::Session.version(auth_conf, version: 'v4')).to eq('V3')
       end
     end
   end
@@ -35,18 +43,18 @@ describe Elektron::AuthSession do
   describe '#new' do
     it 'should create a new instance by given token data' do
       expect(Elektron::Auth::V3).not_to receive(:new)
-      auth_session = Elektron::AuthSession.new(
+      auth_session = Elektron::Auth::Session.new(
         {token_context: {}, token: 'test'}, version: :v3
       )
     end
 
     it 'should create a new instance by given auth_conf' do
       expect(Elektron::Auth::V3).to receive(:new)
-      Elektron::AuthSession.new(auth_conf, version: :v3)
+      Elektron::Auth::Session.new(auth_conf, version: :v3)
     end
   end
 
-  let(:auth_session) { Elektron::AuthSession.new(auth_conf) }
+  let(:auth_session) { Elektron::Auth::Session.new(auth_conf, request_performer) }
   let(:context) { auth_session.instance_variable_get(:@context) }
 
   describe '#expired?' do
