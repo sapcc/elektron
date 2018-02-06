@@ -1,4 +1,4 @@
-require_relative '../http_client'
+require_relative '../containers/request_context'
 require_relative '../utils/hashmap_helper'
 
 module Elektron
@@ -8,26 +8,31 @@ module Elektron
 
       attr_reader :context, :token_value
 
-      def initialize(auth_conf, options = {})
+      def initialize(auth_conf, request_performer, options = {})
         @auth_conf = clone_hash(auth_conf)
         @options = clone_hash(options)
-        @client = Elektron::HttpClient.new(auth_conf[:url], @options)
+        @request_performer = request_performer
 
-        # validate or create token context
-        response = if (scope.nil? || scope.empty?) && @auth_conf[:token]
-                     # validate token and get token context
-                     @client.get(
-                       '/v3/auth/tokens',
-                       {},
-                       'X-Auth-Token' => @auth_conf[:token],
-                       'X-Subject-Token' => @auth_conf[:token]
-                     )
-                   else
-                     # create token context
-                     @client.post('/v3/auth/tokens', credentials.to_json)
-                   end
+        request_context = Elektron::Containers::RequestContext.new(
+          service_name: 'identity', service_url: auth_conf[:url],
+          path: '/v3/auth/tokens', options: @options,
+        )
+
+        if (scope.nil? || scope.empty?) && @auth_conf[:token]
+          request_context.http_method = :get
+          request_context.params = {}
+          request_context.options[:headers] ||= {}
+          request_context.options[:headers]['X-Auth-Token'] = @auth_conf[:token]
+          request_context.options[:headers]['X-Subject-Token'] = @auth_conf[:token]
+        else
+          request_context.http_method = :post
+          request_context.data = credentials
+        end
+
+        response = @request_performer.execute(request_context)
+
         @context = response.body
-        @token_value = response['x-subject-token']
+        @token_value = response.header['x-subject-token']
       end
 
       def user

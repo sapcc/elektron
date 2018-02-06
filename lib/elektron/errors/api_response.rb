@@ -4,6 +4,7 @@ require_relative './general'
 module Elektron
   module Errors
     class ApiResponse < ::Elektron::Errors::General
+      attr_accessor :service_name, :http_method, :url
       attr_reader :response, :messages, :code, :code_type, :error_type
 
       def initialize(response)

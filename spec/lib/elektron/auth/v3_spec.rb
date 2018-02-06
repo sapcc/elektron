@@ -1,31 +1,49 @@
 describe Elektron::Auth::V3 do
+  let(:request_performer) {
+    request_performer = Elektron::Middlewares::Stack.new
+    request_performer.add(Elektron::Middlewares::HttpRequestPerformer)
+    request_performer.add(Elektron::Middlewares::ResponseErrorHandler)
+    request_performer.add(Elektron::Middlewares::ResponseHandler)
+    request_performer
+  }
+
   before :each do
     response = double('response').as_null_object
     allow(response).to receive(:body).and_return(ScopedTokenContext.context)
-    allow(response).to receive(:[]).with(
-      'x-subject-token'
-    ).and_return(ScopedTokenContext.token)
+    allow(response).to receive(:header).and_return(
+      { 'x-subject-token' => ScopedTokenContext.token }
+    )
 
-    @client = double('client').as_null_object
-    allow(@client).to receive(:post).with('/v3/auth/tokens', anything)
-                                    .and_return(response)
-    allow(@client).to receive(:get).with('/v3/auth/tokens', anything, anything)
-                                   .and_return(response)
-    allow(Elektron::HttpClient).to receive(:new).and_return(@client)
+    allow_any_instance_of(Net::HTTP).to receive(:start).and_return(response)
   end
 
   shared_examples 'authentication' do |auth_conf, auth_params|
+    let(:request) { double('request').as_null_object }
+
     it 'should create an auth object' do
-      expect(Elektron::Auth::V3.new(auth_conf)).not_to be(nil)
+      expect(Elektron::Auth::V3.new(auth_conf, request_performer)).not_to be(nil)
     end
 
     it 'should call identity api with auth params' do
-      expect(Elektron::Auth::V3.new(auth_conf).credentials).to eq(auth_params)
+      expect(
+        Elektron::Auth::V3.new(auth_conf, request_performer).credentials
+      ).to eq(auth_params)
     end
 
-    it 'should call post method on http client' do
-      expect(@client).to receive(:post)
-      Elektron::Auth::V3.new(auth_conf)
+    it 'should create net http post request object' do
+      expect(Net::HTTP::Post).to receive(:new).with(
+        '/v3/auth/tokens',
+        {}.merge(Elektron::Middlewares::HttpRequestPerformer::DEFAULT_HEADERS)
+          .merge('Content-Type' => 'application/json')
+      ).and_return(request)
+      Elektron::Auth::V3.new(auth_conf, request_performer)
+    end
+
+    it 'should create net http object' do
+      expect(Net::HTTP).to receive(:new).with(
+        'keystone.api.com', 443, :ENV
+      ).and_call_original
+      Elektron::Auth::V3.new(auth_conf, request_performer)
     end
   end
 
@@ -61,6 +79,7 @@ describe Elektron::Auth::V3 do
 
     context 'user name and domain id are used' do
       auth_conf = {
+        url: 'https://keystone.api.com',
         user_name: 'admin',
         password: 'devstacker',
         user_domain_id: 'default'
@@ -89,6 +108,7 @@ describe Elektron::Auth::V3 do
 
     context 'user id and domain id are used' do
       auth_conf = {
+        url: 'https://keystone.api.com',
         user_id: 'ee4dfb6e5540447cb3741905149d9b6e',
         password: 'devstacker',
         user_domain_id: 'default'
@@ -119,6 +139,7 @@ describe Elektron::Auth::V3 do
   context 'Password authentication with scoped authorization' do
     context 'user id and scope project id are given' do
       auth_conf = {
+        url: 'https://keystone.api.com',
         user_id: 'ee4dfb6e5540447cb3741905149d9b6e',
         password: 'devstacker',
         user_domain_name: 'Default',
@@ -150,6 +171,7 @@ describe Elektron::Auth::V3 do
 
     context 'user id and scope domain name and project name are given' do
       auth_conf = {
+        url: 'https://keystone.api.com',
         user_id: 'ee4dfb6e5540447cb3741905149d9b6e',
         password: 'devstacker',
         user_domain_id: 'default',
@@ -184,6 +206,7 @@ describe Elektron::Auth::V3 do
 
   context 'Password authentication with explicit unscoped authorization' do
     auth_conf = {
+      url: 'https://keystone.api.com',
       user_id: 'ee4dfb6e5540447cb3741905149d9b6e',
       password: 'devstacker',
       unscoped: true
@@ -212,29 +235,34 @@ describe Elektron::Auth::V3 do
 
   context 'Token authentication with unscoped authorization' do
     auth_conf = {
+      url: 'https://keystone.api.com',
       token: 'OS_TOKEN'
     }
 
     it 'should create an auth object' do
-      expect(Elektron::Auth::V3.new(auth_conf)).not_to be(nil)
+      expect(Elektron::Auth::V3.new(auth_conf, request_performer)).not_to be(nil)
     end
 
-    it 'should call get method on http client' do
-      expect(@client).to receive(:get)
-      Elektron::Auth::V3.new(auth_conf)
+    it 'should create net http get object' do
+      expect(Net::HTTP::Get).to receive(:new).with(
+        '/v3/auth/tokens', anything
+      )
+      Elektron::Auth::V3.new(auth_conf, request_performer)
     end
 
     it 'should set headers' do
-      expect(@client).to receive(:get).with(
-        '/v3/auth/tokens',
-        {},
-        { 'X-Auth-Token' => 'OS_TOKEN', 'X-Subject-Token' => 'OS_TOKEN' })
-      Elektron::Auth::V3.new(auth_conf)
+      expect(Net::HTTP::Get).to receive(:new) do |path, headers|
+        expect(path).to eq('/v3/auth/tokens')
+        expect(headers['X-Auth-Token']).to eq('OS_TOKEN')
+        expect(headers['X-Subject-Token']).to eq('OS_TOKEN')
+      end
+      Elektron::Auth::V3.new(auth_conf, request_performer)
     end
   end
 
   context 'Token authentication with scoped authorization' do
     auth_conf = {
+      url: 'https://keystone.api.com',
       token: 'OS_TOKEN',
       scope_project_id: '5b50efd009b540559104ee3c03bbb2b7'
     }
@@ -260,6 +288,7 @@ describe Elektron::Auth::V3 do
 
   context 'Token authentication with explicit unscoped authorization' do
     auth_conf = {
+      url: 'https://keystone.api.com',
       token: 'OS_TOKEN',
       unscoped: true
     }

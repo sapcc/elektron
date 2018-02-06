@@ -1,12 +1,15 @@
 # Elektron
 Elektron is a tiny Ruby client for OpenStack APIs. It handles the authentication, manages the session (re-authentication), implements the service discovery and offers the most important HTTP methods. Everything that Elektron knows and depends on is based solely on the token context it gets from Keystone.
 
+Unlike the well-known and widely used Fog Elektron does not define functions for individual API calls and does not evaluate the response. Elektron only provides the infrastructure to enable individual API calls.
+
 ### What it offers:
   * Authentication
   * Session with token context (service catalog, user data, scope) and automatic re-authentication
-  * HTTP Methods: GET, POST, PUT, PATCH, DELETE and OPTIONS
+  * HTTP Methods: GET, POST, PUT, PATCH, DELETE, COPY, HEAD and OPTIONS
   * Possibility to set headers and body on every request
   * Mapping of response data to objects
+  * A middleware based request architecture
 
 ### What it doesn't offer:
   * Pre-defined API functions
@@ -45,12 +48,12 @@ client = Elektron.client({
   scope_domain_name: 'Default'
 }, { region: 'RegionOne', interface: 'public'})
 
-identity = client.service('identity', path_prefix: 'V3')
+identity = client.service('identity', path_prefix: '/v3')
 identity.get('auth/projects').map_to('body.projects' => OpenStruct)
 ```
 
 ### Client
-` Elektron.client(AUTH_CONF, options = {}) `
+` Elektron.client(auth_conf, options = {}) `
 
 #### Auth Conf Parameters
 
@@ -74,12 +77,12 @@ identity.get('auth/projects').map_to('body.projects' => OpenStruct)
 
 Depending on the use case a different combination of the above parameters is necessary (see below for examples).
 
-#### Client Options
+#### Options
 
 * `:headers` custom headers, default: `{}`
 * `:interface` endpoint interface, default: `'internal'`
 * `:region` the region of the services endpoints
-* `:client` options for HTTP client, default:
+* `:http_client` options for HTTP client, default:
   ```
   {
     open_timeout: 10,
@@ -157,6 +160,7 @@ client = Elektron.client({
 ```
 
 #### Client Methods
+* `middlewares`, holds the stack of middlewares
 * `service(service_name_or_type, options = {})`, options can include       
   `:headers, :interface, :region, :path_prefix, :client, :debug`
 * `is_admin_project?` returns true if current scope project has the flag admin
@@ -186,12 +190,17 @@ client = Elektron.client({
 
 ### Service
 
-`client.service(SERVICE_NAME, options = {})`
+`client.service(service_name, options = {})`
 
 #### Service Options
 
 Accepts all client options (global options) plus one more option:
-* `:path_prefix` path prefix which is used for all requests. For example, you can set the API version to be used by specifying `path_prefix: 'v2.0'`
+* `:path_prefix` path prefix which is used for all requests. For example, you can set the API version to be used by specifying `path_prefix: '/v2.0'`
+
+  **Important:** if path_prefix is not provided the path of service url is is used. If path_prefix starts with a slash (`/`), then the path of service url is ignored. Otherwise the path_prefix will be appended to the original service url path.
+
+  Example: `client.service('identity', path_prefix: '/v3').get('users')`
+  => path is `/v3/users`
 
 These options are valid only within the service (service options).
 
@@ -199,24 +208,24 @@ These options are valid only within the service (service options).
 
 Identity service with public endpoint
 ```
-client.service('identity', interface: 'public')
+identity_service = client.service('identity', interface: 'public')
 ```
 
 Identity service with internal endpoint and prefix '/v3'
 ```
-client.service('identity', interface: 'internal', path_prefix: '/v3')
+identity_service = client.service('identity', interface: 'internal', path_prefix: '/v3')
 ```
 
 Manila service with microversion headers
 ```
-client.service('share', headers: { 'X-OpenStack-Manila-API-Version' => '2.15'})
+manila_service = client.service('share', headers: { 'X-OpenStack-Manila-API-Version' => '2.15'})
 ```
 
 ### Request
 
-`service.HTTP_METHOD(PATH, parameters = {}, options = {}, &block)`
-* parameters: are URL parameters. Example: path = 'auth/projects' with parameter { name: 'test' } results in `'/auth/projects?name=test'`
-* options: `path_prefix`, `:region`, `:interface` and `headers`  
+`service.HTTP_METHOD(path, parameters = {}, options = {}, &block)`
+* parameters: are URL parameters. Example: path = `'auth/projects'` with parameter `{ name: 'test' }` results in `'/auth/projects?name=test'`
+* options: `:path_prefix`, `:region`, `:interface`, `:headers`, `:http_client` and `:debug`  
   These options are valid only within the request (request options).
 
 **IMPORTANT** if the path contains either the symbol `:project_id` or `:tenant_id` then it is mapped
@@ -228,7 +237,7 @@ Example: `service.get('projects/:project_id')` results in `'projects/PROJECT_ID'
 The response object of the request returns a wrapped net/http response object. It has the following methods:
 
 * `body` returns the body as JSON.
-* `[]` makes it possible to access response headers.   
+* `header` makes it possible to access response headers.   
 * `map_to` maps the response to an object or an array of objects.
 
 
@@ -264,11 +273,18 @@ The response object of the request returns a wrapped net/http response object. I
   ```
   identity_service.options('projects')
   ```
-
+* `copy` Accepts path, url parameters and options
+  ```
+  swift_service.copy('my_account/container1/object1', headers: { 'Destination' => '/target_container/target_path'})
+  ```  
+* `head` Accepts path, url parameters and options
+  ```
+  swift_service.head('my_account/container1')
+  ```
 
 ### Mapping
 
-Elektron provides a `map_to` method which maps the response body to an object or to an array of objects. It requires two parameters **key** and **class**. The key consists of individual hierarchy tokens connected by a dot. Where body denotes the beginning ROOT.  
+Elektron provides a default middleware (see below) that handles the API response. This middleware implements the `map_to` method which maps the response body to an object or to an array of objects. It requires two parameters **key** and **class**. The key consists of individual hierarchy tokens connected by a dot. Where body denotes the beginning ROOT.  
 
 ```
 class User < OpenStruct; end
@@ -310,37 +326,100 @@ users = identity.get('users').map_to('body.users', &user_map)
 ```
 
 ### Middlewares
-Each service in Elektron can be extended by middlewares. Middlewares can be used to manipulate parameters, headers and data before they are passed to the http client.
 
-A middleware can be an object or an instance of `Proc`. The important thing is that it responds to the method "call" which returns an array of params, options and data.
+The entire request/response process in Elektron is based on middlewares. Middlewares are small applications (apps) that are called in succession. Each middleware has access to all request data and can manipulate it. It can also access the response data in the same way as it passes through all middleware on the way back.
 
-A middleware is added to the service using the method `add_middleware` which accepts a parameter or a block.
+The order of middlewares is important! Because it can be important to change request data or response data before they are passed on to the next app. For this, Elektron manages a stack of classes that implement the middlewares. Each of these classes must offer at least two methods, `initialize` and `call`. If such a class is instantiated, it gets as parameter a reference to the next app in the stack. The `call` method receives the request data as parameter and must return the response. This provides the possibility to manipulate the request data as well as the response data during the execution of the call method. Most of the time you only want to edit data in one direction with a middleware.
 
-```
-class SetupHeadersMiddleware
-  def call(params, options, data)
-    # user needs to have admin privileges to ask for all projects
-    all_projects = params.delete(:all_projects)
-
-    # user needs to have admin privileges to impersonate another project
-    # don't ask for all and one project at the same time
-    project_id = params.delete(:project_id) unless all_projects
-
-    options[:headers] ||= {}
-    if project_id
-      options[:headers]['X-Auth-Sudo-Project-Id'] = project_id
-    elsif all_projects
-      options[:headers]['X-Auth-All-Projects'] = all_projects.to_s
+Example for a middleware:
+```ruby
+  class NewMiddleware < ::Elektron::Middlewares::Base
+    def initialize(next_middleware = nil)
+      @next_middleware = next_middleware
     end
-    [params, options, data]
+
+    def call(request_data)
+      # add some params to request_data
+      request_data.params['test'] = true
+      # call next app
+      response = @next_middleware.call(request_data)
+      # now we could manipulate the response data
+      # return response
+      response
+    end
+  end
+```
+
+**Request Data** is a container object that responds to the following getter and setter methods:
+* `service_name`, the name of current service
+* `token`
+* `service_url`, url to be used for request
+* `project_id`, project id from token context
+* `http_method`, to be used for request
+* `path`
+* `params`, url params
+* `options`, a hash with keys `:headers`, `:interface`, `:region`, `:http_client`, `:debug`
+* `data`, request body
+* `cache`, a reference to a variable that is kept in the service. It is used to store values across all requests
+
+**Response** is a container object that responds to the following getter and setter methods:
+* `body`, response body
+* `header`, response headers
+* `service_name`, name of current service
+* `http_method`, method used for request
+* `url`, url used for request
+
+#### Stack
+
+The stack maintains a list of middlewares. It offers a variety of methods that allow you to add new apps, remove or replace existing ones. In particular, this can be used to influence the order of app processing. The order of the middlwares plays an important role, since each app can manipulate the request data before it is passed on to the next app in the stack.
+
+Methods:
+* `add`, requires a name and accepts two options `before` and `after`. Without options it adds a middleware to the top of the stack.
+* `remove`, requires a name
+* `replace`, replaces a middleware with another on the same position.
+* `execute`, runs all middlewares at a time in the given order
+
+**A note about `before` and `after`:**
+Imagine the stack having a top and a bottom (as in the illustration below). The request runs through the stack from top to bottom, the response runs from bottom to top. Adding a middleware `before` another middleware means adding it towards the bottom. Adding a middleware `after` another middleware means adding it towards the top.
+
+![Middleware Stack](docs/elektron_middleware_stack.jpg?raw)
+[Middleware Stack](docs/elektron_middleware_stack.pdf "Elektron Middleware Stack PDF")
+
+A request is started by a service with the topmost app and continues to be passed on to the next lower app until it is finally sent to the API. Since the call method of the middlewares always has to return a response, the bottommost app starts the response and passes it further up through the chain of middlwares.
+
+
+Example:
+```ruby
+
+class PrettyDebug < Elektron::Middlewares::Base
+  def call(request_context)
+    unless request_context.options[:debug]
+      return @next_middleware.call(request_context)
+    end
+    # Green
+    Rails.logger.debug("\033[32m\033[1m################ Elektron: Http Client #############\033[22m")
+    response = @next_middleware.call(request_context)
+    Rails.logger.debug("\033[0m")
+    response
   end
 end
 
-dns = Elektron.client(debug: Rails.env.development?).service('dns', path_prefix: '/v2')
-dns.add_middleware(SetupHeadersMiddleware)
+client = Elektron.client({
+  url: 'https://identity.test.com',
+  user_name: 'test',
+  user_domain_name: 'Default',
+  password: 'devstack',
+  scope_domain_name: 'Default'
+}, { region: 'RegionOne', interface: 'public'})
 
-dns.get("zones/#{zone_id}/recordsets", project_id: '1234567890')
+client.middlewares.add(PrettyDebug, after: HttpRequestPerformer)
 ```
+
+#### Default Middlewares
+* `HttpRequestPerformer`, executes the actual HTTP request. This is the innermost middleware.
+* `ResponseErrorHandler`, this middleware follows the `HttpRequestPerformer` and it wraps the API errors into Elektron errors and adds useful information to them.
+* `ResponseHandler`, this middleware follows the `ResponseErrorHandler` and it wraps the response data into a Response object which provides the `map_to` method.
+
 
 ## Contributing
 Contributors are welcome and must adhere to the Contributor covenant code of conduct.
