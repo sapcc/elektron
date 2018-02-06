@@ -30,7 +30,7 @@ module Elektron
       DEFAULT_HEADERS = {
         'Accept' => CONTENT_TYPE_JSON,
         'Connection' => 'keep-alive',
-        'User-Agent' => "Elektron #{::Elektron::VERSION}"
+        'User-Agent' => "Elektron/#{::Elektron::VERSION}"
       }.freeze
 
       # Here is playing the music
