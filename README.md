@@ -378,7 +378,7 @@ Methods:
 * `replace`, replaces a middleware with another on the same position.
 * `execute`, runs all middlewares at a time in the given order
 
-**A note about before and after**
+**A note about `before` and `after`:**
 Imagine the stack having a top and a bottom (as in the illustration below). The request runs through the stack from top to bottom, the response runs from bottom to top. Adding a middleware `before` another middleware means adding it towards the bottom. Adding a middleware `after` another middleware means adding it towards the top.
 
 ![Middleware Stack](docs/elektron_middleware_stack.png?raw)
