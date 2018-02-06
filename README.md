@@ -208,17 +208,17 @@ These options are valid only within the service (service options).
 
 Identity service with public endpoint
 ```
-client.service('identity', interface: 'public')
+identity_service = client.service('identity', interface: 'public')
 ```
 
 Identity service with internal endpoint and prefix '/v3'
 ```
-client.service('identity', interface: 'internal', path_prefix: '/v3')
+identity_service = client.service('identity', interface: 'internal', path_prefix: '/v3')
 ```
 
 Manila service with microversion headers
 ```
-client.service('share', headers: { 'X-OpenStack-Manila-API-Version' => '2.15'})
+manila_service = client.service('share', headers: { 'X-OpenStack-Manila-API-Version' => '2.15'})
 ```
 
 ### Request
@@ -365,23 +365,26 @@ Example for a middleware:
 * `body`, response body
 * `header`, response headers
 * `service_name`, name of current service
-* `http_method`, method used for request
+* `http_method`, method used for request
 * `url`, url used for request
 
 #### Stack
 
-The stack maintains a list of middlewares. It offers a variety of methods that allow you to add new apps, remove or replace existing ones. In particular, this can be used to influence the order of app processing. The order of the middlwares plays a special role, since each app can manipulate the request data before it is passed on to the other app in the stack.
+The stack maintains a list of middlewares. It offers a variety of methods that allow you to add new apps, remove or replace existing ones. In particular, this can be used to influence the order of app processing. The order of the middlwares plays an important role, since each app can manipulate the request data before it is passed on to the next app in the stack.
 
 Methods:
-* `add`, requires a name and accepts two options `before` and `after`. Without options it adds a middleware to the stack on top (outside).
+* `add`, requires a name and accepts two options `before` and `after`. Without options it adds a middleware to the top of the stack.
 * `remove`, requires a name
 * `replace`, replaces a middleware with another on the same position.
 * `execute`, runs all middlewares at a time in the given order
 
+**A note about `before` and `after`:**
+Imagine the stack having a top and a bottom (as in the illustration below). The request runs through the stack from top to bottom, the response runs from bottom to top. Adding a middleware `before` another middleware means adding it towards the bottom. Adding a middleware `after` another middleware means adding it towards the top.
+
 ![Middleware Stack](docs/elektron_middleware_stack.png?raw)
 [Middleware Stack](docs/elektron_middleware_stack.pdf "Elektron Middleware Stack PDF")
 
-A request is started by a service with the external app and continues to be passed on to the inner app until it is finally sent to the API. Since the call method of the middlewares always has to return a response, the innermost app starts the response and passes it further through the chain of middlwares.
+A request is started by a service with the topmost app and continues to be passed on to the next lower app until it is finally sent to the API. Since the call method of the middlewares always has to return a response, the bottommost app starts the response and passes it further up through the chain of middlwares.
 
 
 Example:
