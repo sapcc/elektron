@@ -287,6 +287,16 @@ describe Elektron::Service do
         end
       end
 
+      it 'should extend pathwith path_prefix' do
+        expect(klazz).to receive(:new) do |path, _headers|
+          expect(path).to eq(URI(identity_url).path + '/prefix/test')
+        end.and_return(response)
+
+        service.send(http_method, 'test', path_prefix: 'prefix') do
+          { data1: 'test' }
+        end
+      end
+
       it 'should use service url path' do
         expect(klazz).to receive(:new) do |path, _headers|
           expect(path).to eq(URI(identity_url).path + '/test')

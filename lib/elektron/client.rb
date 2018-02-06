@@ -27,8 +27,7 @@ module Elektron
       interface: 'internal',
       region: nil,
       http_client: {},
-      debug: false,
-      path_prefix: nil
+      debug: false
     }.freeze
 
     def initialize(auth_conf, options = {})

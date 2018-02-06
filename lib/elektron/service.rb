@@ -73,10 +73,7 @@ module Elektron
       uri = URI(service_url)
       service_url = "#{uri.scheme}://#{uri.host}"
 
-      path_prefix = options[:path_prefix]
-      path_prefix = uri.path if path_prefix.nil? || path_prefix.empty?
-
-      path = extend_path(path, path_prefix)
+      path = extend_path(path, uri.path, options[:path_prefix])
       extend_headers(options)
 
       request_context = Elektron::Containers::RequestContext.new(
@@ -94,11 +91,15 @@ module Elektron
       options[:headers]['X-Auth-Token'] = token
     end
 
-    def extend_path(path, path_prefix = nil)
-      if path !~ /https?:\/\/[\S]+/ &&
-         !(path_prefix.nil? && path.start_with?('/'))
-
-        path = join_path_parts(path_prefix, path) if path_prefix
+    def extend_path(path, uri_path, path_prefix = nil)
+      if path !~ /https?:\/\/[\S]+/
+        if path_prefix.nil? || path_prefix.empty?
+          path = join_path_parts(uri_path, path)
+        elsif path_prefix.start_with?('/')
+          path = join_path_parts(path_prefix, path)
+        else
+          path = join_path_parts(uri_path, path_prefix, path)
+        end
       end
 
       if @auth_session.project_id
@@ -116,6 +117,7 @@ module Elektron
       # merge service options with request options
       # This allows to overwrite all options by single request
       keys = Elektron::Client::DEFAULT_OPTIONS.keys
+      keys << :path_prefix
       request_options = keys.each_with_object({}) do |key, hash|
         value = options[key] || params.delete(key)
         hash[key] = value unless value.nil?
