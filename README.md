@@ -378,7 +378,7 @@ Methods:
 * `replace`, replaces a middleware with another on the same position.
 * `execute`, runs all middlewares at a time in the given order
 
-![Middleware Stack](docs/Elektron Middleware Stack.png?raw=true)
+![Middleware Stack](docs/elektron_middleware_stack.png?raw=true)
 
 A request is started by a service with the external app and continues to be passed on to the inner app until it is finally sent to the API. Since the call method of the middlewares always has to return a response, the innermost app starts the response and passes it further through the chain of middlwares.
 
