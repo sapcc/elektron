@@ -48,7 +48,7 @@ client = Elektron.client({
   scope_domain_name: 'Default'
 }, { region: 'RegionOne', interface: 'public'})
 
-identity = client.service('identity', path_prefix: 'V3')
+identity = client.service('identity', path_prefix: '/v3')
 identity.get('auth/projects').map_to('body.projects' => OpenStruct)
 ```
 
@@ -349,7 +349,7 @@ Example for a middleware:
   end
 ```
 
-**Request Data** is a container object that responds to the following methods:
+**Request Data** is a container object that responds to the following getter and setter methods:
 * `service_name`, the name of current service
 * `token`
 * `service_url`, url to be used for request
@@ -361,7 +361,7 @@ Example for a middleware:
 * `data`, request body
 * `cache`, a reference to a variable that is kept in the service. It is used to store values across all requests
 
-**Response** is a container object that responds to the following methods:
+**Response** is a container object that responds to the following getter and setter methods:
 * `body`, response body
 * `header`, response headers
 * `service_name`, name of current service
@@ -410,6 +410,12 @@ client = Elektron.client({
 
 client.middlewares.add(PrettyDebug, after: HttpRequestPerformer)
 ```
+
+#### Default Middlewares
+* `HttpRequestPerformer`, executes the actual HTTP request. This is the innermost middleware.
+* `ResponseErrorHandler`, this middleware follows the `HttpRequestPerformer` and it wraps the API errors into Elektron errors and adds useful information to them.
+* `ResponseHandler`, this middleware follows the `ResponseErrorHandler` and it wraps the response data into a Response object which provides the `map_to` method.
+
 
 ## Contributing
 Contributors are welcome and must adhere to the Contributor covenant code of conduct.
