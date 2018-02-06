@@ -382,7 +382,7 @@ Methods:
 **A note about `before` and `after`:**
 Imagine the stack having a top and a bottom (as in the illustration below). The request runs through the stack from top to bottom, the response runs from bottom to top. Adding a middleware `before` another middleware means adding it towards the bottom. Adding a middleware `after` another middleware means adding it towards the top.
 
-![Middleware Stack](docs/elektron_middleware_stack.png?raw)
+![Middleware Stack](docs/elektron_middleware_stack.jpg?raw)
 [Middleware Stack](docs/elektron_middleware_stack.pdf "Elektron Middleware Stack PDF")
 
 A request is started by a service with the topmost app and continues to be passed on to the next lower app until it is finally sent to the API. Since the call method of the middlewares always has to return a response, the bottommost app starts the response and passes it further up through the chain of middlwares.
