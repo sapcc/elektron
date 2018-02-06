@@ -365,7 +365,7 @@ Example for a middleware:
 * `body`, response body
 * `header`, response headers
 * `service_name`, name of current service
-* `http_method`, method used for request
+* `http_method`, method used for request
 * `url`, url used for request
 
 #### Stack
