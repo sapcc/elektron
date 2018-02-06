@@ -326,6 +326,7 @@ users = identity.get('users').map_to('body.users', &user_map)
 ```
 
 ### Middlewares
+
 The entire request/response process in Elektron is based on middlewares. Middlewares are small applications (apps) that are called in succession. Each middleware has access to all request data and can manipulate it. It can also access the response data in the same way as it passes through all middleware on the way back.
 
 The order of middlewares is important! Because it can be important to change request data or response data before they are passed on to the next app. For this, Elektron manages a stack of classes that implement the middlewares. Each of these classes must offer at least two methods, `initialize` and `call`. If such a class is instantiated, it gets as parameter a reference to the next app in the stack. The `call` method receives the request data as parameter and must return the response. This provides the possibility to manipulate the request data as well as the response data during the execution of the call method. Most of the time you only want to edit data in one direction with a middleware.
