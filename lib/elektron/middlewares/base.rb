@@ -2,10 +2,8 @@ module Elektron
   module Middlewares
     # Middlware is simply a class that implements two methods
     # "initialize" with reference to the next middlware and
-    # "call" with four parameters: metadata, param, options and data.
-    # metada contains information about the service, the http method and the path.
-    # params contain the url parameters, options contain attributes like headers
-    # or path_prefix. data represents the request body for POST, PUT and PATH.
+    # "call" with request_context which contains information about the service,
+    # represents the request body for POST, PUT and PATH.
     #
     # Middlewares allow to manipulate both the request and the response parameters.
     # For example, you can edit the parameters, options, or data before passing
@@ -18,11 +16,11 @@ module Elektron
     #          @next_middleware = next_middleware_in_the_stack
     #        end
     #
-    #        def call(metadata, params, options, data)
+    #        def call(request_context)
     #          # manipulate url parameters
-    #          params['new_param'] = 'test'
+    #          request_context.params['new_param'] = 'test'
     #          # execute request
-    #          response = @next_middleware.call(metadata, params, options, data)
+    #          response = @next_middleware.call(request_context)
     #          # manipulate response body
     #          response.body = {}
     #          return new response
