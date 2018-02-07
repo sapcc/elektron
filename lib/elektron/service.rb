@@ -8,6 +8,10 @@ module Elektron
     include Utils::HashmapHelper
     include Utils::UriHelper
 
+    DEFAULT_OPTIONS = {
+      path_prefix: nil
+    }.merge(Elektron::Client::DEFAULT_OPTIONS).freeze
+
     attr_reader :name, :middlewares
 
     def initialize(name, auth_session, middlewares, options = {})
@@ -72,6 +76,7 @@ module Elektron
                                  interface: options[:interface])
       uri = URI(service_url)
       service_url = "#{uri.scheme}://#{uri.host}"
+      service_url += ":#{uri.port}" if uri.port
 
       path = extend_path(path, uri.path, options[:path_prefix])
       extend_headers(options)
@@ -116,14 +121,13 @@ module Elektron
 
       # merge service options with request options
       # This allows to overwrite all options by single request
-      keys = Elektron::Client::DEFAULT_OPTIONS.keys
-      keys << :path_prefix
-      request_options = keys.each_with_object({}) do |key, hash|
+      request_options = DEFAULT_OPTIONS.keys.each_with_object({}) do |key, hash|
         value = options[key] || params.delete(key)
         hash[key] = value unless value.nil?
       end
 
       options = deep_merge(clone_hash(@options), request_options)
+
       [params, options]
     end
   end

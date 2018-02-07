@@ -1,5 +1,4 @@
 require_relative './auth/session'
-require_relative './service'
 require_relative './utils/hashmap_helper'
 require_relative './errors/service_unavailable'
 require_relative './middlewares/stack'
@@ -68,7 +67,8 @@ module Elektron
     def service_options(options)
       # merge service options with request options
       # This allows to overwrite all options by single request
-      default_options_keys = @options.keys
+      default_options_keys = Elektron::Service::DEFAULT_OPTIONS.keys
+
       options.select! { |k, _| default_options_keys.include?(k) }
       deep_merge(clone_hash(@options), options)
     end
