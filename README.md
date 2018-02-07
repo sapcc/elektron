@@ -422,7 +422,7 @@ client.middlewares.add(PrettyDebug, after: HttpRequestPerformer)
 
 
 ## Contributing
-Contributors are welcome and must adhere to the Contributor covenant code of conduct.
+Contributors are welcome and must adhere to the [Contributor covenant code of conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.html).
 
 Please submit issues/bugs and patches on the Elektron repository.
 
