@@ -48,6 +48,17 @@ describe Elektron::Client do
       )
     end
 
+    it 'should pass all options to the service' do
+      expect(Elektron::Service).to receive(:new) do |_, _, _, options|
+        expect(options).to eq(
+          :headers=>{}, :interface=>"internal", :region=>"staging",
+          :http_client=>{}, :debug=>false, :path_prefix=>"/v3"
+        )
+      end
+
+      client.service('identity', path_prefix: '/v3', interface: 'internal', region: 'staging')
+    end
+
     it 'returns an instance of Elektron::Service' do
       expect(client.service('identity').class).to be(Elektron::Service)
     end
