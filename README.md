@@ -1,7 +1,15 @@
 # Elektron
 Elektron is a tiny Ruby client for OpenStack APIs. It handles the authentication, manages the session (re-authentication), implements the service discovery and offers the most important HTTP methods. Everything that Elektron knows and depends on is based solely on the token context it gets from Keystone.
 
-Unlike the well-known and widely used Fog Elektron does not define functions for individual API calls and does not evaluate the response. Elektron only provides the infrastructure to enable individual API calls.
+Elektron was developed mainly to be used in connection with [Elektra](https://github.com/sapcc/elektra). In the beginning of the Elektra project we used FOG and later switched to Misty. Both clients have advantages and disadvantages.
+ 
+Fog, for example, offers an all-in-one solution. For each API call, there is a corresponding method with a defined signature that sets all necessary headers and executes the HTTP request. The received data is converted into objects so that all attributes can be conveniently retrieved.
+ 
+However, there are disadvantages to FOG, which have led to problems in our project. FOG creates a corresponding object for each OpenStack service. Once such an object has been created, it will do the authentication first. Even if this object is created with a token, it has to somehow learn its service endpoint from the service catalog. Thus, each such object wraps a complete catalog but uses only exactly one endpoint, which causes a lot of overhead. Another issue for us was that FOG returns its own error object for 404 which makes it harder to do fine-grained error handling because the raw error is lost in the process.
+ 
+Misty in contrast authenticates the user and returns a session object, which manages the catalog and generates the services from it. Misty, like FOG, predefines methods for all possible API calls. As a result, new API calls always have to be implemented in the client first before they can be used.
+ 
+Eventually we decided to create our own client (Elektron) that combined the features we liked from the existing clients (FOG: response data transformed into objects - map_to in Elektron;  Misty: auth session with service catalog)  with features we were missing (mostly flexibility and adaptability). Elektron does not predefine any methods and does not add its own logic to the request / response data structure. Elektron only manages services based on the the service catalog and offers the usual HTTP methods.
 
 ### What it offers:
   * Authentication
@@ -9,7 +17,7 @@ Unlike the well-known and widely used Fog Elektron does not define functions for
   * HTTP Methods: GET, POST, PUT, PATCH, DELETE, COPY, HEAD and OPTIONS
   * Possibility to set headers and body on every request
   * Mapping of response data to objects
-  * A middleware based request architecture
+  * A middleware based request / response architecture
 
 ### What it doesn't offer:
   * Pre-defined API functions
