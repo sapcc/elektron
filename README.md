@@ -24,8 +24,7 @@ Eventually we decided to create our own client (Elektron) that combined the feat
   * Knowledge about services
   * Knowledge about request parameters and data
   * Knowledge about response structure
-
-Elektron is just a client that makes it easy to communicate with OpenStack APIs. It does not add its own logic.
+  
 
 ## Installation
 Add this line to your application's Gemfile:
