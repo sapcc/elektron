@@ -84,7 +84,8 @@ module Elektron
       request_context = Elektron::Containers::RequestContext.new(
         service_name: @name, service_url: service_url,
         http_method: method, path: path, params: params,
-        options: options, data: data, cache: @cache
+        options: options, data: data, cache: @cache,
+        project_id: @auth_session && @auth_session.project_id
       )
       @middlewares.execute(request_context)
     end
