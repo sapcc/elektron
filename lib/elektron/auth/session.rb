@@ -30,7 +30,8 @@ module Elektron
         @request_performer = request_performer
 
         if @auth_conf[:token_context] && @auth_conf[:token]
-          current_context(@auth_conf[:token_context])
+          context = add_default_services(@auth_conf[:token_context])
+          current_context(context)
           @token = @auth_conf[:token]
         else
           version = self.class.version(auth_conf, @options)
@@ -60,9 +61,37 @@ module Elektron
 
       protected
 
+      def add_default_services(context)
+        context = context['token'] if context && context['token']
+        if context
+          context['catalog'] ||= []
+
+          identity_service = context['catalog'].find do |service|
+            service['name'] == 'identity' || service['type'] == 'identity'
+          end
+
+          if identity_service.nil?
+            context['catalog'] << {
+              'endpoints' => [
+                {
+                  'region_id' => @options[:region],
+                  'url' => @auth_conf[:url],
+                  'region' => @options[:region],
+                  'interface' => 'public'
+                }
+              ],
+              'type' => 'identity',
+              'name' => 'keystone'
+            }
+          end
+        end
+        context
+      end
+
       def authenticate
         auth = @auth_class.new(@auth_conf, @request_performer, @options)
-        current_context(auth.context)
+        context = add_default_services(auth.context)
+        current_context(context)
         @token = auth.token_value
       end
     end
