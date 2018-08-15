@@ -72,14 +72,14 @@ module Elektron
 
           if identity_service.nil?
             context['catalog'] << {
-              'endpoints' => [
+              'endpoints' => %w[public internal admin].collect do |interface|
                 {
                   'region_id' => @options[:region],
                   'url' => @auth_conf[:url],
                   'region' => @options[:region],
-                  'interface' => 'public'
+                  'interface' => interface
                 }
-              ],
+              end,
               'type' => 'identity',
               'name' => 'keystone'
             }
