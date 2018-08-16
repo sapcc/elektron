@@ -109,7 +109,7 @@ module Elektron
         response
       rescue JSON::ParserError
         # do nothing
-        return response
+        response
       end
 
       # This method executes the actual http request.
@@ -129,7 +129,7 @@ module Elektron
       end
 
       def http_options(uri, request_options)
-        client_options = clone_hash(request_options.fetch(:client, {}))
+        client_options = clone_hash(request_options.fetch(:http_client, {}))
         http_options = clone_hash(DEFAULT_OPTIONS).merge(client_options)
         verify_ssl = http_options.delete(:verify_ssl) != false
 
