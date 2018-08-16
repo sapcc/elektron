@@ -109,7 +109,7 @@ module Elektron
         response
       rescue JSON::ParserError
         # do nothing
-        return response
+        response
       end
 
       # This method executes the actual http request.

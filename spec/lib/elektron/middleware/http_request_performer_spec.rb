@@ -24,7 +24,7 @@ describe Elektron::Middlewares::HttpRequestPerformer do
 
       it 'should pass path and headers to request object' do
         expect(klazz).to have_received(:new).with(
-          'test', { 'header1' => 'test' }
+          'test', 'header1' => 'test'
         )
       end
     end
@@ -36,7 +36,7 @@ describe Elektron::Middlewares::HttpRequestPerformer do
         allow(klazz).to receive(:new).and_call_original
 
         @request = subject.create_request(
-          http_method, 'test', { 'header1' => 'test' }, { 'data1' => 'value1'}
+          http_method, 'test', { 'header1' => 'test' }, 'data1' => 'value1'
         )
       end
 
@@ -46,10 +46,9 @@ describe Elektron::Middlewares::HttpRequestPerformer do
 
       it 'should pass path and headers to request object' do
         expect(klazz).to have_received(:new).with(
-          'test', {
-            'Content-Type' => Elektron::Middlewares::HttpRequestPerformer::CONTENT_TYPE_JSON,
-            'header1' => 'test'
-          }
+          'test',
+          'Content-Type' => Elektron::Middlewares::HttpRequestPerformer::CONTENT_TYPE_JSON,
+          'header1' => 'test'
         )
       end
 
@@ -57,7 +56,7 @@ describe Elektron::Middlewares::HttpRequestPerformer do
         expect_any_instance_of(klazz).to receive(:body=).with(
           { 'data1' => 'value1' }.to_json
         )
-        subject.create_request(http_method, 'test', { 'header1' => 'test' }, { 'data1' => 'value1'})
+        subject.create_request(http_method, 'test', { 'header1' => 'test' }, 'data1' => 'value1')
       end
     end
 
@@ -100,9 +99,9 @@ describe Elektron::Middlewares::HttpRequestPerformer do
       expect(
         subject.encode_data(
           Elektron::Middlewares::HttpRequestPerformer::CONTENT_TYPE_JSON,
-          { 'test' => 'value'}
+          'test' => 'value'
         )
-      ).to eq("{\"test\":\"value\"}")
+      ).to eq('{"test":"value"}')
     end
 
     it 'should not json encode data' do
@@ -117,11 +116,11 @@ describe Elektron::Middlewares::HttpRequestPerformer do
 
   describe '#json?' do
     it 'should return true' do
-      expect(subject.json?("{\"test\":\"value\"}")).to eq(true)
+      expect(subject.json?('{"test":"value"}')).to eq(true)
     end
 
     it 'should return false' do
-      expect(subject.json?({ 'test' => 'value' })).to eq(false)
+      expect(subject.json?('test' => 'value')).to eq(false)
     end
   end
 
@@ -129,23 +128,22 @@ describe Elektron::Middlewares::HttpRequestPerformer do
     it 'should merge default headers with given headers' do
       expect(subject.headers(headers: { 'Test' => 'abc' })).to eq(
         {}.merge(Elektron::Middlewares::HttpRequestPerformer::DEFAULT_HEADERS)
-          .merge({ 'Test' => 'abc' })
+          .merge('Test' => 'abc')
       )
     end
 
     it 'should create a copy of default headers' do
       new_headers = subject.headers(headers: { 'Test' => 'abc' })
-      expect{
+      expect do
         test = {}.merge(Elektron::Middlewares::HttpRequestPerformer::DEFAULT_HEADERS)
         test['bad'] = 'test'
-      }.to change(new_headers, :size).by(0)
-
+      end.to change(new_headers, :size).by(0)
     end
   end
 
   describe '#http_options' do
     it 'should copy default options and merge' do
-      http_options = subject.http_options(URI('http:://test.com'), client: {read_timeout: 10})
+      http_options = subject.http_options(URI('http:://test.com'), client: { read_timeout: 10 })
       expect(http_options).to eq(
         {}.merge(Elektron::Middlewares::HttpRequestPerformer::DEFAULT_OPTIONS)
           .merge(read_timeout: 10)
@@ -153,11 +151,11 @@ describe Elektron::Middlewares::HttpRequestPerformer do
     end
 
     it 'should not modify default options' do
-      http_options = subject.http_options(URI('http:://test.com'), client: {read_timeout: 10})
-      expect {
+      http_options = subject.http_options(URI('http:://test.com'), client: { read_timeout: 10 })
+      expect do
         http_options['test'] = true
-      }.to change(Elektron::Middlewares::HttpRequestPerformer::DEFAULT_OPTIONS, :size)
-       .by(0)
+      end.to change(Elektron::Middlewares::HttpRequestPerformer::DEFAULT_OPTIONS, :size)
+        .by(0)
     end
 
     it 'should set use_ssl option to true' do
@@ -167,7 +165,7 @@ describe Elektron::Middlewares::HttpRequestPerformer do
 
     it 'should set verfiy mode' do
       http_options = subject.http_options(
-        URI('https:://test.com'), client: {verify_ssl: false}
+        URI('https:://test.com'), client: { verify_ssl: false }
       )
       expect(http_options[:verify_mode]).to eq(OpenSSL::SSL::VERIFY_NONE)
     end
