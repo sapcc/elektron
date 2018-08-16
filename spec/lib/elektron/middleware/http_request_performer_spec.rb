@@ -143,7 +143,7 @@ describe Elektron::Middlewares::HttpRequestPerformer do
 
   describe '#http_options' do
     it 'should copy default options and merge' do
-      http_options = subject.http_options(URI('http:://test.com'), client: { read_timeout: 10 })
+      http_options = subject.http_options(URI('http:://test.com'), http_client: { read_timeout: 10 })
       expect(http_options).to eq(
         {}.merge(Elektron::Middlewares::HttpRequestPerformer::DEFAULT_OPTIONS)
           .merge(read_timeout: 10)
@@ -151,7 +151,7 @@ describe Elektron::Middlewares::HttpRequestPerformer do
     end
 
     it 'should not modify default options' do
-      http_options = subject.http_options(URI('http:://test.com'), client: { read_timeout: 10 })
+      http_options = subject.http_options(URI('http:://test.com'), http_client: { read_timeout: 10 })
       expect do
         http_options['test'] = true
       end.to change(Elektron::Middlewares::HttpRequestPerformer::DEFAULT_OPTIONS, :size)
@@ -165,7 +165,7 @@ describe Elektron::Middlewares::HttpRequestPerformer do
 
     it 'should set verfiy mode' do
       http_options = subject.http_options(
-        URI('https:://test.com'), client: { verify_ssl: false }
+        URI('https:://test.com'), http_client: { verify_ssl: false }
       )
       expect(http_options[:verify_mode]).to eq(OpenSSL::SSL::VERIFY_NONE)
     end
