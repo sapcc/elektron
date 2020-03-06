@@ -37,7 +37,8 @@ module Elektron
         message_candidates = {
           'message' => nil,
           'description' => nil,
-          'type' => nil
+          'type' => nil,
+          'faultstring' => nil
         }
 
         hash.each do |k, v|
@@ -56,7 +57,8 @@ module Elektron
         if message_candidates.values.uniq.length.positive?
           messages << (message_candidates['message'] ||
             message_candidates['description'] ||
-            message_candidates['type'])
+            message_candidates['type'] || 
+            message_candidates['faultstring'])
         end
         messages
       end
