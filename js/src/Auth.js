@@ -1,7 +1,21 @@
 /**
- * Implements the auth session
- * @param {string} endpoint an URL
+ * Convert auth config to keystone authentication object
  * @param {object} authConf an object which can contain
+ * possible properties:
+ * AUTH
+ * - token: a valid keystone auth token. If token is given, no further information is necessary
+ * - userId: user ID
+ * - userName: user name, only one of the two is necessary userId or userName
+ * - userDomainId: domain id where the user is registered
+ * - userDomainName: domain name where the user is registered, only one of the two is necessary userDomainId or userDomainName
+ * - password: user password
+ * SCOPE
+ * - scopeProjectId: project ID. If this parameter is given no further scope information is neccessary (project scope)
+ * - scopeProjectName: project name. In this case scopeProjectDomainID or scopeProjectDomainName are neccessary. (project scope)
+ * - scopeProjectDomainId: project domain id (project scope)
+ * - scopeProjectDomainName: project domain name (project scope)
+ * - scopeDomainId: domain id (domain scope)
+ * - scopeDomainName: domain name (domain scope)
  */
 function Auth(authConf) {
   if (

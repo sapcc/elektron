@@ -1,12 +1,5 @@
 import Session from "./Session.js"
 
-const MOCK_PRICES = [50, 47, 53, 50, 49, 51, 52]
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    json: () => Promise.resolve(MOCK_PRICES),
-  })
-)
-
 test("Session is defined", () => {
   expect(Session).toBeDefined()
 })
@@ -27,20 +20,19 @@ describe("new Session instance", () => {
     }).toThrow(/missing parameter: auth conf/i)
   })
 
-  test("authentication", (done) => {
-    const session = new Session("https://identity-3.qa-de-1.cloud.sap/v3", {
-      userName: "D064310",
+  // test("authentication", (done) => {
+  //   const session = new Session("https://identity-3.qa-de-1.cloud.sap/v3", {
+  //     userName: "D064310",
+  //     userDomainName: "monsoon3",
+  //     scopeProjectDomainName: "monsoon3",
+  //     scopeProjectName: "cc-demo",
+  //   })
 
-      userDomainName: "monsoon3",
-      scopeProjectDomainName: "monsoon3",
-      scopeProjectName: "cc-demo",
-    })
-
-    session.getAuthToken().then(() => {
-      console.log("----------------", session.token)
-      console.log(session.token.serviceUrl("compute"))
-    })
-  })
+  //   session.getAuthToken().then(() => {
+  //     console.log("----------------", session.token)
+  //     console.log(session.token.serviceUrl("compute"))
+  //   })
+  // })
 
   //   describe("auth configuration", () => {
   //     test("token authentication", () => {

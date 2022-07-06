@@ -1,10 +1,35 @@
 import Client from "./Client"
-import Auth from "./Auth"
+import Session from "./Session"
 
-function Elektron(endpoint, authConf) {
-  if (!endpoint || typeof endpoint !== "string" || endpoint === "")
-    throw new Error(
-      "Missing parameter: endpoint. Please provide a valid identity endpoint."
-    )
+async function connect(url, authConf, options = {}) {
+  const session = new Session(url, authConf)
+  await session.authenticate()
+  const clients = {}
+
+  return {
+    service: (name, serviceOptions = {}) => {
+      const serviceUrl = session.token.serviceUrl(name)
+      if (!serviceUrl)
+        throw new Error("Service not found. Could not find service " + name)
+
+      clients[name] =
+        clients[name] ||
+        new Client({
+          url: serviceUrl,
+          headers: {
+            "X-Auth-Token": session.authToken,
+            ...options.headers,
+            ...serviceOptions.headers,
+          },
+          parseResponse:
+            options.parseResponse === true ||
+            serviceOptions.parseResponse === true,
+          pathPrefix: options.pathPrefix || serviceOptions.pathPrefix || false,
+        })
+
+      return clients[name]
+    },
+    logout: session.logout,
+  }
 }
-export default Elektron
+export { connect }
