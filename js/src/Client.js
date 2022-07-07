@@ -56,9 +56,9 @@ Client.prototype.getUrl = function (url, options = {}) {
     : this.pathPrefix
 
   if (pathPrefix) {
-    base = new URL(this.pathPrefix, base).toString()
+    base = new URL(pathPrefix, base).toString()
   }
-  let endpoint = new URL(base + url)
+  let endpoint = new URL(base + "/" + url)
   // replace double slashes with single slash
   endpoint = endpoint.origin + endpoint.pathname.replace(/\/\/+/g, "/")
 

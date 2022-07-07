@@ -37,7 +37,7 @@ Token.prototype.serviceUrl = function (type, options = {}) {
   const region =
     options.region ||
     (this.availableRegions.length > 0 && this.availableRegions[0])
-  const interfaceName = options.interface || "public"
+  const interfaceName = options.interfaceName || "public"
 
   const service = this.catalog.find((s) => s.type === type || s.name === type)
 

@@ -1,4 +1,24 @@
-import Session from "./Session.js"
+import Session from "./Session"
+import Client from "./Client"
+
+jest.mock("./Client", () => {
+  //Mock the default export
+  const TestTokenData = require("./TestTokenData")
+
+  return {
+    __esModule: true,
+    default: {
+      get: jest.fn().mockResolvedValue({
+        headers: { get: () => "header" },
+        json: jest.fn().mockResolvedValue({ token: TestTokenData }),
+      }),
+      post: jest.fn().mockResolvedValue({
+        headers: { get: () => "header" },
+        json: jest.fn().mockResolvedValue({ token: TestTokenData }),
+      }),
+    },
+  }
+})
 
 test("Session is defined", () => {
   expect(Session).toBeDefined()
@@ -20,94 +40,80 @@ describe("new Session instance", () => {
     }).toThrow(/missing parameter: auth conf/i)
   })
 
-  // test("authentication", (done) => {
-  //   const session = new Session("https://identity-3.qa-de-1.cloud.sap/v3", {
-  //     userName: "D064310",
-  //     userDomainName: "monsoon3",
-  //     scopeProjectDomainName: "monsoon3",
-  //     scopeProjectName: "cc-demo",
-  //   })
+  describe("token validation", () => {
+    let session
+    beforeEach(() => {
+      session = new Session("http://identity.com/v3", {
+        token: "TEST_TOKEN",
+      })
+    })
 
-  //   session.getAuthToken().then(() => {
-  //     console.log("----------------", session.token)
-  //     console.log(session.token.serviceUrl("compute"))
-  //   })
-  // })
+    test("authentication", () => {
+      session.authenticate()
+      expect(Client.get).toHaveBeenLastCalledWith(
+        "http://identity.com/v3/auth/tokens",
+        {
+          headers: {
+            "X-Auth-Token": "TEST_TOKEN",
+            "X-Subject-Token": "TEST_TOKEN",
+          },
+        }
+      )
+    })
+  })
 
-  //   describe("auth configuration", () => {
-  //     test("token authentication", () => {
-  //       const auth = new Auth("https://test", {
-  //         token: "TEST_TOKEN",
-  //       })
-  //       expect(auth.auth).toEqual({
-  //         identity: { methods: ["token"], token: "TEST_TOKEN" },
-  //         scope: "unscoped",
-  //       })
-  //     })
-  //     test("token authentication with scope", () => {
-  //       const auth = new Auth("https://test", {
-  //         token: "TEST_TOKEN",
-  //         scopeProjectId: "123456",
-  //       })
-  //       expect(auth.auth).toEqual({
-  //         identity: { methods: ["token"], token: "TEST_TOKEN" },
-  //         scope: { project: { id: "123456" } },
-  //       })
-  //     })
-  //     test("token authentication with project and domain scope", () => {
-  //       const auth = new Auth("https://test", {
-  //         token: "TEST_TOKEN",
-  //         scopeProjectName: "project",
-  //         scopeProjectDomainName: "domain",
-  //       })
-  //       expect(auth.auth).toEqual({
-  //         identity: { methods: ["token"], token: "TEST_TOKEN" },
-  //         scope: { project: { name: "project", domain: { name: "domain" } } },
-  //       })
-  //     })
-  //     test("token authentication with project and domain scope", () => {
-  //       const auth = new Auth("https://test", {
-  //         token: "TEST_TOKEN",
-  //         scopeProjectName: "project",
-  //         scopeProjectDomainId: "test",
-  //       })
-  //       expect(auth.auth).toEqual({
-  //         identity: { methods: ["token"], token: "TEST_TOKEN" },
-  //         scope: { project: { name: "project", domain: { id: "test" } } },
-  //       })
-  //     })
-  //     test("token authentication with project id scope", () => {
-  //       const auth = new Auth("https://test", {
-  //         token: "TEST_TOKEN",
-  //         scopeProjectId: "12345",
-  //         scopeProjectDomainId: "test",
-  //       })
-  //       expect(auth.auth).toEqual({
-  //         identity: { methods: ["token"], token: "TEST_TOKEN" },
-  //         scope: { project: { id: "12345" } },
-  //       })
-  //     })
-  //     test("password authentication with project id scope", () => {
-  //       const auth = new Auth("https://test", {
-  //         userName: "user",
-  //         userDomainId: "12345",
-  //         password: "Password",
-  //         scopeProjectName: "test",
-  //         scopeProjectDomainName: "test",
-  //       })
-  //       expect(auth.auth).toEqual({
-  //         identity: {
-  //           methods: ["password"],
-  //           password: {
-  //             user: {
-  //               name: "user",
-  //               password: "Password",
-  //               domain: { id: "12345" },
-  //             },
-  //           },
-  //         },
-  //         scope: { project: { name: "test", domain: { name: "test" } } },
-  //       })
-  //     })
-  //   })
+  describe("token authentication", () => {
+    let session
+    beforeEach(() => {
+      session = new Session("http://identity.com/v3", {
+        token: "TEST_TOKEN",
+        scopeDomainName: "default",
+      })
+    })
+
+    test("authentication", () => {
+      session.authenticate()
+      expect(Client.post).toHaveBeenLastCalledWith(
+        "http://identity.com/v3/auth/tokens",
+        {
+          auth: {
+            identity: { methods: ["token"], token: { id: "TEST_TOKEN" } },
+            scope: { domain: { name: "default" } },
+          },
+        }
+      )
+    })
+  })
+
+  describe("password authentication", () => {
+    let session
+    beforeEach(() => {
+      session = new Session("http://identity.com/v3", {
+        userName: "TEST USER",
+        password: "TEST",
+        userDomainName: "default",
+      })
+    })
+
+    test("authentication", () => {
+      session.authenticate()
+      expect(Client.post).toHaveBeenLastCalledWith(
+        "http://identity.com/v3/auth/tokens",
+        {
+          auth: {
+            identity: {
+              methods: ["password"],
+              password: {
+                user: {
+                  name: "TEST USER",
+                  password: "TEST",
+                  domain: { name: "default" },
+                },
+              },
+            },
+          },
+        }
+      )
+    })
+  })
 })

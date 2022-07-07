@@ -28,10 +28,26 @@ function Session(endpoint, authConf, options = {}) {
 
 Session.prototype.authenticate = async function () {
   if (this.authToken && this.token && this.expiresAt > Date.now()) return this
-  return Client.post(this.endpoint, this.auth).then(async (response) => {
+
+  let request
+  // if token id is given and scope not then validate token to get the catalog
+  if (this.auth.auth.identity.token?.id && !this.auth.auth.scope) {
+    request = Client.get(this.endpoint, {
+      headers: {
+        "X-Auth-Token": this.auth.auth.identity.token.id,
+        "X-Subject-Token": this.auth.auth.identity.token.id,
+      },
+    })
+  } else {
+    //else make authentication
+    request = Client.post(this.endpoint, this.auth)
+  }
+
+  return request.then(async (response) => {
     this.authToken = response.headers.get("x-subject-token")
     const data = await response.json()
     this.token = new Token(data.token)
+
     return this
   })
 }

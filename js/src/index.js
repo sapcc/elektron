@@ -7,10 +7,14 @@ async function connect(url, authConf, options = {}) {
   const clients = {}
 
   return {
+    // serviceOptions = {interfaceName,region, headers, parseResponse, pathPrefix}
     service: (name, serviceOptions = {}) => {
-      const serviceUrl = session.token.serviceUrl(name)
-      if (!serviceUrl)
-        throw new Error("Service not found. Could not find service " + name)
+      const { interfaceName, region } = serviceOptions
+      const serviceUrl = session.token.serviceUrl(name, {
+        region,
+        interfaceName,
+      })
+      if (!serviceUrl) return null
 
       clients[name] =
         clients[name] ||

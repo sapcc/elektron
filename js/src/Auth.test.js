@@ -18,10 +18,11 @@ describe("Auth object", () => {
   test("token authentication", () => {
     const auth = Auth({
       token: "TEST_TOKEN",
+      unscoped: true,
     })
     expect(auth).toEqual({
       auth: {
-        identity: { methods: ["token"], token: "TEST_TOKEN" },
+        identity: { methods: ["token"], token: { id: "TEST_TOKEN" } },
         scope: "unscoped",
       },
     })
@@ -34,7 +35,7 @@ describe("Auth object", () => {
     })
     expect(auth).toEqual({
       auth: {
-        identity: { methods: ["token"], token: "TEST_TOKEN" },
+        identity: { methods: ["token"], token: { id: "TEST_TOKEN" } },
         scope: { project: { id: "123456" } },
       },
     })
@@ -48,7 +49,7 @@ describe("Auth object", () => {
     })
     expect(auth).toEqual({
       auth: {
-        identity: { methods: ["token"], token: "TEST_TOKEN" },
+        identity: { methods: ["token"], token: { id: "TEST_TOKEN" } },
         scope: { project: { name: "project", domain: { name: "domain" } } },
       },
     })
@@ -62,7 +63,7 @@ describe("Auth object", () => {
     })
     expect(auth).toEqual({
       auth: {
-        identity: { methods: ["token"], token: "TEST_TOKEN" },
+        identity: { methods: ["token"], token: { id: "TEST_TOKEN" } },
         scope: { project: { name: "project", domain: { id: "test" } } },
       },
     })
@@ -76,7 +77,7 @@ describe("Auth object", () => {
     })
     expect(auth).toEqual({
       auth: {
-        identity: { methods: ["token"], token: "TEST_TOKEN" },
+        identity: { methods: ["token"], token: { id: "TEST_TOKEN" } },
         scope: { project: { id: "12345" } },
       },
     })

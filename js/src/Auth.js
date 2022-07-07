@@ -27,11 +27,11 @@ function Auth(authConf) {
       "Missing parameter: auth conf. Please provide auth configuration."
     )
 
-  const auth = { identity: {}, scope: "unscoped" }
+  const auth = { identity: {} }
 
   // build identity object
   if (authConf.token) {
-    auth.identity = { methods: ["token"], token: authConf.token }
+    auth.identity = { methods: ["token"], token: { id: authConf.token } }
   } else {
     // console.log("authConf:", authConf)
     if (
@@ -77,10 +77,10 @@ function Auth(authConf) {
     else if (authConf.scopeProjectDomainId)
       auth.scope.project.domain = { id: authConf.scopeProjectDomainId }
   } else if (authConf.scopeDomainName)
-    auth.scope.domain = { name: authConf.scopeDomainName }
+    auth.scope = { domain: { name: authConf.scopeDomainName } }
   else if (authConf.scopeDomainId)
-    auth.scope.domain = { id: authConf.scopeDomainId }
-  else auth.scope = "unscoped"
+    auth.scope = { domain: { id: authConf.scopeDomainId } }
+  else if (authConf.unscoped) auth.scope = "unscoped"
 
   return { auth }
 }
