@@ -2,15 +2,14 @@
   "name": "elektron",
   "version": "1.0.0",
   "description": "A lightweight openstack client intended for use in browsers.",
-  "repository": "git@github.com:sapcc/elektron.git",
-  "author": "d064310 <andreas.pfau@sap.com>",
+  "repository": "https://github.com/sapcc/elektron/tree/master/js",
+  "author": "Andreas Pfau <andreas.pfau@sap.com>",
   "license": "MIT",
-  "private": false,
   "main": "js/dist/bundle.js",
   "browser": "js/dist/bundle.js",
   "scripts": {
     "test": "jest --watchAll",
-    "build": "rollup js/src/index.js --file js/dist/bundle.js --format umd --name elektron --compact"
+    "build": "rollup ./src/index.js --file ./dist/bundle.js --format umd --name elektron --compact --plugin rollup-plugin-terser"
   },
   "devDependencies": {
     "@babel/core": "^7.18.6",
@@ -18,13 +17,11 @@
     "babel-jest": "^28.1.2",
     "jest": "^28.1.2",
     "jest-fetch-mock": "^3.0.3",
-    "rollup": "^2.75.7"
+    "rollup": "^2.75.7",
+    "rollup-plugin-terser": "^7.0.2"
   },
   "dependencies": {
-    "cross-fetch": "^3.1.5",
-    "install": "^0.13.0",
-    "node-fetch": "^3.2.6",
-    "npm": "^8.13.2",
-    "whatwg-fetch": "^3.6.2"
-  }
+    "cross-fetch": "^3.1.5"
+  },
+  "packageManager": "yarn@3.2.1"
 }

@@ -1,5 +1,5 @@
 import Auth from "./Auth"
-import Client from "./Client"
+import { get, post } from "./Client"
 import Token from "./Token"
 
 /**
@@ -32,15 +32,16 @@ Session.prototype.authenticate = async function () {
   let request
   // if token id is given and scope not then validate token to get the catalog
   if (this.auth.auth.identity.token?.id && !this.auth.auth.scope) {
-    request = Client.get(this.endpoint, {
+    request = get(this.endpoint, {
       headers: {
         "X-Auth-Token": this.auth.auth.identity.token.id,
         "X-Subject-Token": this.auth.auth.identity.token.id,
       },
+      parseResponse: false,
     })
   } else {
     //else make authentication
-    request = Client.post(this.endpoint, this.auth)
+    request = post(this.endpoint, this.auth, { parseResponse: false })
   }
 
   return request.then(async (response) => {
@@ -61,14 +62,13 @@ Session.prototype.logout = async function () {
   })
 }
 
-Session.prototype.getAuthToken = async function () {
+/**
+ *
+ * @returns array of authToken and tokenContext
+ */
+Session.prototype.getAuth = async function () {
   await this.authenticate()
-  return this.authToken
-}
-
-Session.prototype.getToken = async function () {
-  await this.authenticate()
-  return this.token
+  return [this.authToken, this.token]
 }
 
 export default Session

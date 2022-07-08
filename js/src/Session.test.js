@@ -1,5 +1,5 @@
 import Session from "./Session"
-import Client from "./Client"
+import { get, post } from "./Client"
 
 jest.mock("./Client", () => {
   //Mock the default export
@@ -7,16 +7,15 @@ jest.mock("./Client", () => {
 
   return {
     __esModule: true,
-    default: {
-      get: jest.fn().mockResolvedValue({
-        headers: { get: () => "header" },
-        json: jest.fn().mockResolvedValue({ token: TestTokenData }),
-      }),
-      post: jest.fn().mockResolvedValue({
-        headers: { get: () => "header" },
-        json: jest.fn().mockResolvedValue({ token: TestTokenData }),
-      }),
-    },
+
+    get: jest.fn().mockResolvedValue({
+      headers: { get: () => "header" },
+      json: jest.fn().mockResolvedValue({ token: TestTokenData }),
+    }),
+    post: jest.fn().mockResolvedValue({
+      headers: { get: () => "header" },
+      json: jest.fn().mockResolvedValue({ token: TestTokenData }),
+    }),
   }
 })
 
@@ -50,13 +49,14 @@ describe("new Session instance", () => {
 
     test("authentication", () => {
       session.authenticate()
-      expect(Client.get).toHaveBeenLastCalledWith(
+      expect(get).toHaveBeenLastCalledWith(
         "http://identity.com/v3/auth/tokens",
         {
           headers: {
             "X-Auth-Token": "TEST_TOKEN",
             "X-Subject-Token": "TEST_TOKEN",
           },
+          parseResponse: false,
         }
       )
     })
@@ -73,14 +73,15 @@ describe("new Session instance", () => {
 
     test("authentication", () => {
       session.authenticate()
-      expect(Client.post).toHaveBeenLastCalledWith(
+      expect(post).toHaveBeenLastCalledWith(
         "http://identity.com/v3/auth/tokens",
         {
           auth: {
             identity: { methods: ["token"], token: { id: "TEST_TOKEN" } },
             scope: { domain: { name: "default" } },
           },
-        }
+        },
+        { parseResponse: false }
       )
     })
   })
@@ -97,7 +98,7 @@ describe("new Session instance", () => {
 
     test("authentication", () => {
       session.authenticate()
-      expect(Client.post).toHaveBeenLastCalledWith(
+      expect(post).toHaveBeenLastCalledWith(
         "http://identity.com/v3/auth/tokens",
         {
           auth: {
@@ -112,7 +113,8 @@ describe("new Session instance", () => {
               },
             },
           },
-        }
+        },
+        { parseResponse: false }
       )
     })
   })

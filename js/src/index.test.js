@@ -1,4 +1,4 @@
-import { connect } from "./index.js"
+import Elektron from "./index.js"
 
 jest.mock("./Client", () => {
   //Mock the default export
@@ -6,31 +6,30 @@ jest.mock("./Client", () => {
 
   return {
     __esModule: true,
-    default: {
-      get: jest.fn().mockResolvedValue({
-        headers: { get: () => "header" },
-        json: jest.fn().mockResolvedValue({ token: TestTokenData }),
-      }),
-      post: jest.fn().mockResolvedValue({
-        headers: { get: () => "header" },
-        json: jest.fn().mockResolvedValue({ token: TestTokenData }),
-      }),
-    },
+
+    get: jest.fn().mockResolvedValue({
+      headers: { get: () => "header" },
+      json: jest.fn().mockResolvedValue({ token: TestTokenData }),
+    }),
+    post: jest.fn().mockResolvedValue({
+      headers: { get: () => "header" },
+      json: jest.fn().mockResolvedValue({ token: TestTokenData }),
+    }),
   }
 })
 
-test("connect is defined", () => {
-  expect(connect).toBeDefined()
+test("Elektron is defined", () => {
+  expect(Elektron).toBeDefined()
 })
 
-test("connect is a function", () => {
-  expect(typeof connect).toBe("function")
+test("Elektron is a function", () => {
+  expect(typeof Elektron).toBe("function")
 })
 
-describe("connect", () => {
+describe("Elektron", () => {
   let elektron
   beforeEach(async () => {
-    elektron = await connect(
+    elektron = Elektron(
       "https://identity-3.qa-de-1.cloud.sap/v3",
       {
         token: "test",
@@ -48,5 +47,9 @@ describe("connect", () => {
 
   test("responds to volumev2 service ", () => {
     expect(typeof elektron.service("volumev2")).toEqual("object")
+  })
+
+  test("service responds to get", () => {
+    expect(typeof elektron.service("volumev2").get).toEqual("function")
   })
 })

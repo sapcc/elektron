@@ -1,4 +1,4 @@
-import Client from "./Client.js"
+import * as Client from "./Client.js"
 import fetch from "cross-fetch"
 
 jest.mock("cross-fetch", () => {
@@ -13,7 +13,7 @@ jest.mock("cross-fetch", () => {
   }
 })
 
-describe("static methods", () => {
+describe("Client methods", () => {
   test("responds to head", () => {
     expect(Client.head).toBeDefined()
   })
@@ -32,39 +32,9 @@ describe("static methods", () => {
   test("responds to patch", () => {
     expect(Client.patch).toBeDefined()
   })
-})
-
-describe("initializes a client", () => {
-  let client
-  beforeAll(() => {
-    client = new Client({ url: "http://test.com" })
-  })
-
-  test("new client instance", () => {
-    expect(client).toBeDefined()
-  })
-
-  test("responds to head", () => {
-    expect(client.head).toBeDefined()
-  })
-  test("responds to get", () => {
-    expect(client.get).toBeDefined()
-  })
-  test("responds to post", () => {
-    expect(client.post).toBeDefined()
-  })
-  test("responds to delete", () => {
-    expect(client.del).toBeDefined()
-  })
-  test("responds to put", () => {
-    expect(client.put).toBeDefined()
-  })
-  test("responds to patch", () => {
-    expect(client.patch).toBeDefined()
-  })
 
   test("head", () => {
-    client.head("/servers")
+    Client.head("/servers", { host: "http://test.com" })
     expect(fetch).toHaveBeenCalledWith("http://test.com/servers", {
       headers: { "Content-Type": "application/json" },
       method: "HEAD",
@@ -72,7 +42,7 @@ describe("initializes a client", () => {
   })
 
   test("get", () => {
-    client.get("/servers")
+    Client.get("/servers", { host: "http://test.com" })
     expect(fetch).toHaveBeenCalledWith("http://test.com/servers", {
       headers: { "Content-Type": "application/json" },
       method: "GET",
@@ -80,7 +50,7 @@ describe("initializes a client", () => {
   })
 
   test("post", () => {
-    client.post("/servers", { name: "test" })
+    Client.post("/servers", { name: "test" }, { host: "http://test.com" })
     expect(fetch).toHaveBeenCalledWith("http://test.com/servers", {
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -89,7 +59,7 @@ describe("initializes a client", () => {
   })
 
   test("delete", () => {
-    client.del("/servers/1")
+    Client.del("/servers/1", { host: "http://test.com" })
     expect(fetch).toHaveBeenCalledWith("http://test.com/servers/1", {
       headers: { "Content-Type": "application/json" },
       method: "DELETE",
@@ -97,7 +67,7 @@ describe("initializes a client", () => {
   })
 
   test("put", () => {
-    client.put("/servers/1", { name: "test" })
+    Client.put("/servers/1", { name: "test" }, { host: "http://test.com" })
     expect(fetch).toHaveBeenLastCalledWith("http://test.com/servers/1", {
       headers: { "Content-Type": "application/json" },
       method: "PUT",
@@ -106,7 +76,7 @@ describe("initializes a client", () => {
   })
 
   test("patch", () => {
-    client.patch("/servers/1", { name: "test" })
+    Client.patch("/servers/1", { name: "test" }, { host: "http://test.com" })
     expect(fetch).toHaveBeenLastCalledWith("http://test.com/servers/1", {
       headers: { "Content-Type": "application/json" },
       method: "PATCH",
@@ -117,8 +87,7 @@ describe("initializes a client", () => {
 
 describe("pathPrefix", () => {
   test("should replace path prefix", () => {
-    const client = new Client({ url: "http://test.com/v1" })
-    client.head("/servers", { pathPrefix: "v2" })
+    Client.head("/servers", { pathPrefix: "v2", host: "http://test.com/v1" })
     expect(fetch).toHaveBeenLastCalledWith("http://test.com/v2/servers", {
       headers: { "Content-Type": "application/json" },
       method: "HEAD",

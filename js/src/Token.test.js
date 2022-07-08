@@ -48,28 +48,28 @@ describe("Token", () => {
       expect(token.hasRole("email_admin")).toEqual(true)
     })
 
-    test("serviceUrl", () => {
-      expect(token.serviceUrl("volumev2")).toEqual(
+    test("serviceURL", () => {
+      expect(token.serviceURL("volumev2")).toEqual(
         "https://volume-3.qa-de-1.cloud.sap:443/v2/e9141fb24eee4b3e9f25ae69cda31132"
       )
     })
 
-    test("serviceUrl for internal endpoint", () => {
+    test("serviceURL for internal endpoint", () => {
       expect(
-        token.serviceUrl("volumev2", { interfaceName: "internal" })
+        token.serviceURL("volumev2", { interfaceName: "internal" })
       ).toEqual(
         "http://cinder-api.monsoon3.svc.kubernetes.qa-de-1.cloud.sap:8776/v2/e9141fb24eee4b3e9f25ae69cda31132"
       )
     })
 
-    test("serviceUrl for internal endpoint", () => {
-      expect(token.serviceUrl("volumev2", { interfaceName: "admin" })).toEqual(
+    test("serviceURL for internal endpoint", () => {
+      expect(token.serviceURL("volumev2", { interfaceName: "admin" })).toEqual(
         "http://cinder-api.monsoon3.svc.kubernetes.qa-de-1.cloud.sap:8776/v2/e9141fb24eee4b3e9f25ae69cda31132"
       )
     })
 
-    test("serviceUrl for region staging", () => {
-      expect(token.serviceUrl("hermes", { region: "staging" })).toEqual(
+    test("serviceURL for region staging", () => {
+      expect(token.serviceURL("hermes", { region: "staging" })).toEqual(
         "https://hermes.staging.cloud.sap/v1"
       )
     })

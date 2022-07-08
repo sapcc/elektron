@@ -33,7 +33,7 @@ Token.prototype.hasRole = function (name) {
   return this.roleNames.indexOf(name) >= 0
 }
 
-Token.prototype.serviceUrl = function (type, options = {}) {
+Token.prototype.serviceURL = function (type, options = {}) {
   const region =
     options.region ||
     (this.availableRegions.length > 0 && this.availableRegions[0])

@@ -26,235 +26,95 @@ const checkStatus = (response) => {
  * @param {object} options parseResponse
  * @returns
  */
-const handleResponse = async (response, options) => {
-  return options?.parseResponse ? response.json() : response
-}
-
-/**
- *
- * @param {object} options headers, url, pathPrefix, parseResponse
- */
-function Client(options = {}) {
-  this.headers = { ...options.headers }
-  this.url = options.url
-  this.pathPrefix = options.pathPrefix
-  this.parseResponse = options.parseResponse
+const handleResponse = async (response, parseResponse) => {
+  return parseResponse && response.json ? response.json() : response
 }
 
 /**
  * Build url based on instance options and given parameters
- * @param {string} url a absolute url or a path (if this.url is set)
+ * @param {string} base a absolute url
+ * @param {string} path
  * @param {object} options can contain pathPrefix
  * @returns an absolute url
  */
-Client.prototype.getUrl = function (url, options = {}) {
-  if (url.indexOf("http") === 0) return url
-  let base = this.url
-  // pathPrefix can be overwritten on every request
-  const pathPrefix = options.hasOwnProperty("pathPrefix")
-    ? options.pathPrefix
-    : this.pathPrefix
+const buildURL = function (base, path, pathPrefix) {
+  if (path.indexOf("http") === 0) return path
 
   if (pathPrefix) {
     base = new URL(pathPrefix, base).toString()
   }
-  let endpoint = new URL(base + "/" + url)
+
+  let endpoint = new URL(base + "/" + path)
   // replace double slashes with single slash
   endpoint = endpoint.origin + endpoint.pathname.replace(/\/\/+/g, "/")
 
   return endpoint
 }
 
-/**
- * Implements a static function for HEAD
- * @param {string} url
- * @param {object} options parseResponse, pathPrefix, headers
- * @returns
- */
-Client.head = function (url, options = {}) {
+const request = (method, path, options) => {
+  const url = buildURL(options.host, path, options.pathPrefix)
+  const body = options.body && JSON.stringify(options.body)
+  const parseResponse = options.parseResponse === false ? false : true
+
   return fetch(url, {
     headers: { ...DEFAULT_HEADERS, ...options.headers },
-    method: "HEAD",
-  }).then(checkStatus)
+    method,
+    body,
+  })
+    .then(checkStatus)
+    .then((response) => handleResponse(response, parseResponse))
 }
+
+/**
+ * Implements a static function for HEAD
+ * @param {string} path
+ * @param {object} options parseResponse, pathPrefix, headers, host
+ * @returns
+ */
+export const head = (path, options = {}) => request("HEAD", path, options)
 
 /**
  * Implements a static function for GET
- * @param {string} url
+ * @param {string} path
  * @param {object} options parseResponse, pathPrefix, headers
  * @returns
  */
-Client.get = function (url, options = {}) {
-  // console.log(url, { headers: { ...DEFAULT_HEADERS, ...options.headers } })
-  return fetch(url, {
-    headers: { ...DEFAULT_HEADERS, ...options.headers },
-    method: "GET",
-  })
-    .then(checkStatus)
-    .then((response) =>
-      handleResponse(response, { parseResponse: options.parseResponse })
-    )
-}
+export const get = (path, options = {}) => request("GET", path, options)
 
 /**
  * Implements a static function for DELETE
- * @param {string} url
+ * @param {string} path
  * @param {object} options parseResponse, pathPrefix, headers
  * @returns
  */
-Client.del = function (url, options = {}) {
-  return fetch(url, {
-    headers: { ...DEFAULT_HEADERS, ...options.headers },
-    method: "DELETE",
-  }).then(checkStatus)
-}
+export const del = (path, options = {}) => request("DELETE", path, options)
 
 /**
  * Implements a static function for POST
- * @param {string} url
+ * @param {string} path
  * @param {object} values
  * @param {object} options parseResponse, pathPrefix, headers
  * @returns
  */
-Client.post = function (url, values, options = {}) {
-  return fetch(url, {
-    headers: { ...DEFAULT_HEADERS, ...options.headers },
-    method: "POST",
-    body: JSON.stringify(values),
-  })
-    .then(checkStatus)
-    .then((response) =>
-      handleResponse(response, { parseResponse: options.parseResponse })
-    )
-}
+export const post = (path, values, options = {}) =>
+  request("POST", path, { ...options, body: values })
 
 /**
  * Implements a static function for PATCH
- * @param {string} url
+ * @param {string} path
  * @param {object} values
  * @param {object} options parseResponse, pathPrefix, headers
  * @returns
  */
-Client.patch = function (url, values, options = {}) {
-  return fetch(url, {
-    headers: { ...DEFAULT_HEADERS, ...options.headers },
-    method: "PATCH",
-    body: JSON.stringify(values),
-  })
-    .then(checkStatus)
-    .then(handleResponse)
-}
+export const patch = (path, values, options = {}) =>
+  request("PATCH", path, { ...options, body: values })
 
 /**
  * Implements a static function for PUT
- * @param {string} url
+ * @param {string} path
  * @param {object} values
  * @param {object} options parseResponse, pathPrefix, headers
  * @returns
  */
-Client.put = function (url, values, options = {}) {
-  return fetch(url, {
-    headers: { ...DEFAULT_HEADERS, ...options.headers },
-    method: "PUT",
-    body: JSON.stringify(values),
-  })
-    .then(checkStatus)
-    .then((response) =>
-      handleResponse(response, { parseResponse: options.parseResponse })
-    )
-}
-
-/**
- * Implements instance function for HEAD
- * @param {string} url absolute url or relative path
- * @param {object} options parseResponse, pathPrefix, headers
- * @returns promise
- */
-Client.prototype.head = function (url, options = {}) {
-  return Client.head(this.getUrl(url, options), {
-    headers: { ...this.headers, ...options.headers },
-    parseResponse: options.hasOwnProperty("parseResponse")
-      ? options.parseResponse
-      : this.parseResponse,
-  })
-}
-
-/**
- * Implements instance function for GET
- * @param {string} url absolute url or relative path
- * @param {object} options parseResponse, pathPrefix, headers
- * @returns promise
- */
-Client.prototype.get = function (url, options = {}) {
-  return Client.get(this.getUrl(url, options), {
-    headers: { ...this.headers, ...options.headers },
-    parseResponse: options.hasOwnProperty("parseResponse")
-      ? options.parseResponse
-      : this.parseResponse,
-  })
-}
-
-/**
- * Implements instance function for DELETE
- * @param {string} url absolute url or relative path
- * @param {object} options parseResponse, pathPrefix, headers
- * @returns promise
- */
-Client.prototype.del = function (url, options = {}) {
-  return Client.del(this.getUrl(url, options), {
-    headers: { ...this.headers, ...options.headers },
-    parseResponse: options.hasOwnProperty("parseResponse")
-      ? options.parseResponse
-      : this.parseResponse,
-  })
-}
-
-/**
- * Implements instance function for POST
- * @param {string} url absolute url or relative path
- * @param {object} values
- * @param {object} options parseResponse, pathPrefix, headers
- * @returns promise
- */
-Client.prototype.post = function (url, values, options = {}) {
-  return Client.post(this.getUrl(url, options), values, {
-    headers: { ...this.headers, ...options.headers },
-    parseResponse: options.hasOwnProperty("parseResponse")
-      ? options.parseResponse
-      : this.parseResponse,
-  })
-}
-
-/**
- * Implements instance function for PATCH
- * @param {string} url absolute url or relative path
- * @param {object} values
- * @param {object} options parseResponse, pathPrefix, headers
- * @returns promise
- */
-Client.prototype.patch = function (url, values, options = {}) {
-  return Client.patch(this.getUrl(url, options), values, {
-    headers: { ...this.headers, ...options.headers },
-    parseResponse: options.hasOwnProperty("parseResponse")
-      ? options.parseResponse
-      : this.parseResponse,
-  })
-}
-
-/**
- * Implements instance function for PUT
- * @param {string} url absolute url or relative path
- * @param {object} values
- * @param {object} options parseResponse, pathPrefix, headers
- * @returns promise
- */
-Client.prototype.put = function (url, values, options = {}) {
-  return Client.put(this.getUrl(url, options), values, {
-    headers: { ...this.headers, ...options.headers },
-    parseResponse: options.hasOwnProperty("parseResponse")
-      ? options.parseResponse
-      : this.parseResponse,
-  })
-}
-
-export default Client
+export const put = (path, values, options = {}) =>
+  request("PUT", path, { ...options, body: values })
