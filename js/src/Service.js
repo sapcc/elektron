@@ -1,4 +1,4 @@
-import { head, get, post, put, patch, del } from "./Client"
+import * as Client from "./Client"
 
 const Service = (name, session, serviceOptions = {}) => {
   const clientParams = async (options) => {
@@ -6,12 +6,17 @@ const Service = (name, session, serviceOptions = {}) => {
 
     if (!authToken || !token) throw new Error("No valid auth token available")
 
-    const { interfaceName, region, headers, pathPrefix, parseResponse } = {
+    let { interfaceName, region, headers, pathPrefix, parseResponse, debug } = {
       ...serviceOptions,
       ...options,
     }
 
-    const serviceURL = token.serviceURL(name, { interfaceName, region })
+    interfaceName = interfaceName || "public"
+
+    const serviceURL = token.serviceURL(name, {
+      interfaceName,
+      region,
+    })
 
     if (!serviceURL)
       throw new Error(
@@ -23,33 +28,33 @@ const Service = (name, session, serviceOptions = {}) => {
       pathPrefix,
       parseResponse,
       headers: { ...headers, "X-Auth-Token": authToken },
+      debug,
     }
   }
 
   return {
     head: async (path, options = {}) =>
-      clientParams(options).then((params) => head(path, params)),
+      clientParams(options).then((params) => Client.head(path, params)),
 
     get: async (path, options = {}) =>
-      clientParams(options).then((params) => get(path, params)),
-
+      clientParams(options).then((params) => Client.get(path, params)),
     post: async (path, values, options) =>
       clientParams(options).then((params) =>
-        post(path, { ...params, body: values })
+        Client.post(path, { ...params, body: values })
       ),
 
     put: async (path, values, options = {}) =>
       clientParams(options).then((params) =>
-        put(path, { ...params, body: values })
+        Client.put(path, { ...params, body: values })
       ),
 
     patch: async (path, values, options = {}) =>
       clientParams(options).then((params) =>
-        patch(path, { ...params, body: values })
+        Client.patch(path, { ...params, body: values })
       ),
 
     del: async (path, options = {}) =>
-      clientParams(options).then((params) => del(path, params)),
+      clientParams(options).then((params) => Client.del(path, params)),
   }
 }
 

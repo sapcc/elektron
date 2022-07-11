@@ -1,439 +1,272 @@
 # Elektron
-Elektron is a tiny JS client for OpenStack APIs. It handles the authentication, manages the session (re-authentication), implements the service discovery and offers the most important HTTP methods. Everything that Elektron knows and depends on is based solely on the token context it gets from Keystone.
 
-Elektron was developed mainly to be used in connection with [Elektra](https://github.com/sapcc/elektra). In the beginning of the Elektra project we used FOG and later switched to Misty. Both clients have advantages and disadvantages.
- 
-Fog, for example, offers an all-in-one solution. For each API call, there is a corresponding method with a defined signature that sets all necessary headers and executes the HTTP request. The received data is converted into objects so that all attributes can be conveniently retrieved.
- 
-However, there are disadvantages to FOG, which have led to problems in our project. FOG creates a corresponding object for each OpenStack service. Once such an object has been created, it will do the authentication first. Even if this object is created with a token, it has to somehow learn its service endpoint from the service catalog. Thus, each such object wraps a complete catalog but uses only exactly one endpoint, which causes a lot of overhead. Another issue for us was that FOG returns its own error object for 404 which makes it harder to do fine-grained error handling because the raw error is lost in the process.
- 
-Misty in contrast authenticates the user and returns a session object, which manages the catalog and generates the services from it. Misty, like FOG, predefines methods for all possible API calls. As a result, new API calls always have to be implemented in the client first before they can be used.
- 
-Eventually we decided to create our own client (Elektron) that combined the features we liked from the existing clients (FOG: response data transformed into objects - map_to in Elektron;  Misty: auth session with service catalog)  with features we were missing (mostly flexibility and adaptability). Elektron does not predefine any methods and does not add its own logic to the request / response data structure. Elektron only manages services based on the the service catalog and offers the usual HTTP methods.
+Elektron is a tiny promise based JS client for OpenStack APIs. It handles the authentication, manages the session (re-authentication), implements the service discovery and offers the most important HTTP methods. Everything that Elektron knows and depends on is based solely on the token context it gets from Keystone.
 
 ### What it offers:
-  * Authentication
-  * Session with token context (service catalog, user data, scope) and automatic re-authentication
-  * HTTP Methods: GET, POST, PUT, PATCH, DELETE, COPY, HEAD and OPTIONS
-  * Possibility to set headers and body on every request
-  * Mapping of response data to objects
-  * A middleware based request / response architecture
+
+- Authentication
+- Session with token context (service catalog, user data, scope) and automatic re-authentication
+- HTTP Methods: GET, POST, PUT, PATCH, DELETE, COPY, HEAD and OPTIONS
+- Possibility to set headers on every request
 
 ### What it doesn't offer:
-  * Pre-defined API functions
-  * Knowledge about services
-  * Knowledge about request parameters and data
-  * Knowledge about response structure
-  
+
+- Pre-defined API functions
+- Knowledge about services
+- Knowledge about request parameters and data
+- Knowledge about response structure
 
 ## Installation
-Add this line to your application's Gemfile:
 
-```ruby
-gem 'elektron'
+npm
+
+```bash
+$ npm install sapcc-elektron
 ```
 
-And then execute:
-```bash
-$ bundle
-```
+yarn
 
-Or install it yourself as:
 ```bash
-$ gem install elektron
+yarn add sapcc-elektron
 ```
 
 ## Usage
 
 ### Quick start
-```
-client = Elektron.client({
-  url: 'https://identity.test.com',
-  user_name: 'test',
-  user_domain_name: 'Default',
-  password: 'test',
-  scope_domain_name: 'Default'
-}, { region: 'RegionOne', interface: 'public'})
 
-identity = client.service('identity', path_prefix: '/v3')
-identity.get('auth/projects').map_to('body.projects' => OpenStruct)
+```js
+import Elektron from "sapcc-elektron"
+
+const elektron = Elektron("https://identity-3.qa-de-1.cloud.sap/v3", {
+  userName: "your user name",
+  password: "your password",
+  userDomainName: "Default",
+  scopeProjectId: "project id to which the token should be scoped",
+})
+
+elektron
+  .service("compute")
+  .get("/servers")
+  .then((servers) => console.log(servers))
 ```
 
 ### Client
-` Elektron.client(auth_conf, options = {}) `
 
-#### Auth Conf Parameters
+`Elektron(authEndpoint,authConf, options = {})`
 
-* `:url` Keystone Endpoint URL
-* `:user_id`
-* `:user_name`
-* `:user_domain_id` ID of the domain in which the user is defined
-* `:user_domain_name` name of the domain in which the user is defined
-* `:password`
-* `:scope_domain_id`
-* `:scope_domain_name`
-* `:scope_project_id` if provided, then all other scope parameters can be neglected
-* `:scope_project_name`
-* `:scope_project_domain_name`
-* `:scope_project_domain_id`
-* `scope: 'unscoped'` to explicitly to get an unscoped token
-* `:token_context`
-* `:token` if token is provided and token_context is not, then the client will validate this token and build the session based on the response data
+- `authEndpoint` is a keystone endpoint URL
 
-**NOTE** automatic re-authentication is only possible if user credentials are provided (user_id / user_name, password, etc.)
+#### Auth conf properties
+
+Authentication
+
+- `userId: "12345"` (string) - user id
+- `userName: "i0007"` (string) - user name. You should use userId or userName
+- `userDomainId: "12345"` (string) - ID of the domain in which the user is defined
+- `userDomainName: "Default"` (string) - name of the domain in which the user is defined. Use only userDomainId or userDomainName
+- `password: "SECRET"` (string) - user password
+
+Scope
+
+- `scopeDomainId: "12345"` (string) - domain id for domain scoped token
+- `scopeDomainName: "Default"` (string) - domain name for domain scoped token
+- `scopeProjectId: "12345"` (string) - if provided, then all other scope parameters can be neglected
+- `scopeProjectName: "demo"` (string) - project name
+- `scopeProjectDomainName: "Default"` (string) - project domain name
+- `scopeProjectDomainId: "12345"` (string) - project domain id
+- `unscoped: false` (bool) - false to explicitly to get an unscoped token
+- `token: "AUTH_TOKEN"` (string) - if token is provided and scope is not, then the client will validate this token and build the session based on the response data
+
+**NOTE** automatic re-authentication is only possible if user credentials are provided (userId / userName, password, etc.)
 
 Depending on the use case a different combination of the above parameters is necessary (see below for examples).
 
 #### Options
 
-* `:headers` custom headers, default: `{}`
-* `:interface` endpoint interface, default: `'internal'`
-* `:region` the region of the services endpoints
-* `:http_client` options for HTTP client, default:
-  ```
-  {
-    open_timeout: 10,
-    read_timeout: 60,
-    keep_alive_timeout: 60,
-    verify_ssl: false
-  }
-  ```
-
-* `:debug` if true then logs debug output to console.  
-  **WARNING** This method opens a serious security hole. Never use this method in production code.  
-  Default: `false`
+- `headers: { "Content-Type": "application/json" }` (object) - custom headers
+- `interfaceName: "public"` (string) - endpoint interface
+- `region: "staging"` (string) - the region of the services endpoints
+- `pathPrefix: "v2"` (string) - path prefix, e.g. to switch to another version
+- `parseResponse: true` (bool) - parse response as json.
+- `debug: true` (bool) - if true then logs debug output to console.
 
 These options are valid for all services and requests (global options).
 
 #### Examples
 
 Authentication with user credentials
-```
-client = Elektron.client({
-  url: 'https://identity.test.com',
-  user_name: 'test',
-  user_domain_name: 'Default',
-  password: 'devstack'
-}, { region: 'RegionOne', interface: 'public'})
+
+```js
+const elektron = Elektron.client(
+  "https://identity.test.com",
+  {
+    userName: "test",
+    userDomainName: "Default",
+    password: "devstack",
+  },
+  { region: "RegionOne", interfaceName: "public" }
+)
 ```
 
 Authentication with user credentials and domain scope
-```
-client = Elektron.client({
-  url: 'https://identity.test.com',
-  user_name: 'test',
-  user_domain_name: 'Default',
-  password: 'devstack',
-  scope_domain_name: 'Default'
-}, { region: 'RegionOne', interface: 'public'})
+
+```js
+const elektron = Elektron.client(
+  "https://identity.test.com",
+  {
+    userName: "test",
+    userDomainName: "Default",
+    password: "devstack",
+    scopeDomainName: "Default",
+  },
+  { region: "RegionOne", interfaceName: "public" }
+)
 ```
 
 Authentication with user credentials and project scope
-```
-client = Elektron.client({
-  url: 'https://identity.test.com',
-  user_name: 'test',
-  user_domain_name: 'Default',
-  password: 'devstack',
-  scope_project_domain_name: 'Default',
-  scope_project_name: 'demo'
-}, { region: 'RegionOne', interface: 'public'})
+
+```js
+const elektron = Elektron.client(
+  "https://identity.test.com",
+  {
+    userName: "test",
+    userDomainName: "Default",
+    password: "devstack",
+    scopeProjectDomainName: "Default",
+    scopeProjectName: "demo",
+  },
+  { region: "RegionOne", interfaceName: "public" }
+)
 ```
 
 Authentication with token
-```
-client = Elektron.client({
-  url: 'https://identity.test.com',
-  token: 'OS_TOKEN'
-}, { region: 'RegionOne', interface: 'public'})
+
+```js
+const elektron = Elektron.client(
+  "https://identity.test.com",
+  {
+    token: "OS_TOKEN",
+  },
+  { region: "RegionOne", interfaceName: "public" }
+)
 ```
 
 Authentication with token and scope
-```
-client = Elektron.client({
-  url: 'https://identity.test.com',
-  token: 'OS_TOKEN',
-  scope_project_id: '123456789'
-}, { region: 'RegionOne', interface: 'public'})
-```
 
-Authentication with token context
-```
-client = Elektron.client({
-  url: 'https://identity.test.com',
-  token: 'OS_TOKEN',
-  token_context: {"token" => {...}}
-}, { region: 'RegionOne', interface: 'public'})
+```js
+const elektron = Elektron.client(
+  "https://identity.test.com",
+  {
+    token: "OS_TOKEN",
+    scopeProjectDd: "123456789",
+  },
+  { region: "RegionOne", interfaceName: "public" }
+)
 ```
 
 #### Client Methods
-* `middlewares`, holds the stack of middlewares
-* `service(service_name_or_type, options = {})`, options can include       
-  `:headers, :interface, :region, :path_prefix, :client, :debug`
-* `is_admin_project?` returns true if current scope project has the flag admin
-* `user_id`
-* `user_name`
-* `user_description`
-* `user_domain_id`
-* `user_domain_name`
-* `domain_id`
-* `domain_name`
-* `project_id`
-* `project_name`
-* `project_parent_id`
-* `project_domain_id`
-* `project_domain_name`
-* `expires_at` returns a Time object
-* `expired?` returns true or false
-* `issued_at` returns a Time object
-* `catalog` returns the services catalog
-* `service?(service_name_or_type)` returns true if catalog includes the service_name
-* `roles` returns an array of role hashes ([{'id' => ID, 'name' => NAME}])
-* `role_names` returns an array of role names
-* `has_role?(role_name)` returns true or false
-* `service_url(service_name_or_type, options = {})` options are :region and :interface
-* `available_services_regions` returns an array of available regions
-* `token` returns the token value (AUTH_TOKEN)
+
+- `service(serviceNameOrType, options = {})` (string, object) - options can include  
+  `headers, interfaceName, region, pathPrefix, parseResponse, debug`
+- `token()` - returns a promise object which resolves to token
+- `authToken()` - returns a promise object which resolves to the current auth token
+- `logout()` - revokes the auth token
+
+<!-- - `user_id`
+- `user_name`
+- `user_description`
+- `user_domain_id`
+- `user_domain_name`
+- `domain_id`
+- `domain_name`
+- `project_id`
+- `project_name`
+- `project_parent_id`
+- `project_domain_id`
+- `project_domain_name`
+- `expires_at` returns a Time object
+- `expired?` returns true or false
+- `issued_at` returns a Time object
+- `catalog` returns the services catalog
+- `service?(service_name_or_type)` returns true if catalog includes the service_name
+- `roles` returns an array of role hashes ([{'id' => ID, 'name' => NAME}])
+- `role_names` returns an array of role names
+- `has_role?(role_name)` returns true or false
+- `service_url(service_name_or_type, options = {})` options are :region and :interface
+- `available_services_regions` returns an array of available regions
+- `token` returns the token value (AUTH_TOKEN) -->
 
 ### Service
 
-`client.service(service_name, options = {})`
+- `elektron.service(service_name, options = {})` (string,object) - returns a service based on the catalog
 
-#### Service Options
+#### Options
 
-Accepts all client options (global options) plus one more option:
-* `:path_prefix` path prefix which is used for all requests. For example, you can set the API version to be used by specifying `path_prefix: '/v2.0'`
-
-  **Important:** if path_prefix is not provided the path of service url is is used. If path_prefix starts with a slash (`/`), then the path of service url is ignored. Otherwise the path_prefix will be appended to the original service url path.
-
-  Example: `client.service('identity', path_prefix: '/v3').get('users')`
-  => path is `/v3/users`
+- `headers: { "Content-Type": "application/json" }` (object) - custom headers
+- `interfaceName: "public"` (string) - endpoint interface
+- `region: "staging"` (string) - the region of the services endpoints
+- `pathPrefix: "v2"` (string) - path prefix, e.g. to switch to another version
+- `parseResponse: true` (bool) - parse response as json.
+- `debug: true` (bool) - if true then logs debug output to console.
 
 These options are valid only within the service (service options).
 
 #### Examples
 
 Identity service with public endpoint
-```
-identity_service = client.service('identity', interface: 'public')
+
+```js
+const identityService = elektron.service("identity", {
+  interfaceName: "public",
+})
 ```
 
 Identity service with internal endpoint and prefix '/v3'
-```
-identity_service = client.service('identity', interface: 'internal', path_prefix: '/v3')
+
+```js
+const identityService = elektron.service("identity", { interfaceName: "internal", pathPrefix: "/v3")
 ```
 
 Manila service with microversion headers
-```
-manila_service = client.service('share', headers: { 'X-OpenStack-Manila-API-Version' => '2.15'})
+
+```js
+const manilaService = elektron.service("share", { headers: { "X-OpenStack-Manila-API-Version": "2.15" })
 ```
 
 ### Request
 
-`service.HTTP_METHOD(path, parameters = {}, options = {}, &block)`
-* parameters: are URL parameters. Example: path = `'auth/projects'` with parameter `{ name: 'test' }` results in `'/auth/projects?name=test'`
-* options: `:path_prefix`, `:region`, `:interface`, `:headers`, `:http_client` and `:debug`  
-  These options are valid only within the request (request options).
+- `service.head(path, options = {})` (string,object) - executes http HEAD method
+- `service.get(path, options = {})` (string,object) - executes http GET method
+- `service.post(path, values = {}, options = {})` (string,object,object) - executes http POST method
+- `service.put(path, values = {}, options = {})` (string,object,object) - executes http PUT method
+- `service.patch(path, values = {}, options = {})` (string,object,object) - executes http PATCH method
+- `service.del(path, options = {})` (string,object) - executes http DELETE method
 
-**IMPORTANT** if the path contains either the symbol `:project_id` or `:tenant_id` then it is mapped
-to the project_id of the current token scope.  
-Example: `service.get('projects/:project_id')` results in `'projects/PROJECT_ID'`
+#### Options
+
+- `headers: { "Content-Type": "application/json" }` (object) - custom headers
+- `interfaceName: "public"` (string) - endpoint interface
+- `region: "staging"` (string) - the region of the services endpoints
+- `pathPrefix: "v2"` (string) - path prefix, e.g. to switch to another version
+- `parseResponse: true` (bool) - parse response as json.
+- `debug: true` (bool) - if true then logs debug output to console.
 
 #### Request Response
 
 The response object of the request returns a wrapped net/http response object. It has the following methods:
 
-* `body` returns the body as JSON.
-* `header` makes it possible to access response headers.   
-* `map_to` maps the response to an object or an array of objects.
-
-
-#### Available Methods
-* `get` Accepts path, url parameters and options.  
-  ```
-  identity_service.get('auth/projects', name: 'test', interface: 'public')
-  ```
-* `post` Accepts path, url parameters, options and block.
-  ```
-  identity_service.post('projects') do  
-    {"project" => PROJECT_DATA}
-  end
-  ```
-
-* `delete` Accepts path, url parameters and options.
-  ```
-  identity_service.delete("projects/#{PROJECT_ID}")
-  ```
-* `put` Accepts path, url parameters, options and block.
-  ```
-  identity_service.put("projects/#{PROJECT_ID}") do
-    { "project" => PROJECT_DATA }
-  end
-  ```
-* `patch` Accepts path, url parameters, options and block.
-  ```
-  identity_service.patch("projects/#{PROJECT_ID}") do
-    { "project" => PROJECT_DATA }
-  end
-  ```
-* `options` Accepts path, url parameters and options
-  ```
-  identity_service.options('projects')
-  ```
-* `copy` Accepts path, url parameters and options
-  ```
-  swift_service.copy('my_account/container1/object1', headers: { 'Destination' => '/target_container/target_path'})
-  ```  
-* `head` Accepts path, url parameters and options
-  ```
-  swift_service.head('my_account/container1')
-  ```
-
-### Mapping
-
-Elektron provides a default middleware (see below) that handles the API response. This middleware implements the `map_to` method which maps the response body to an object or to an array of objects. It requires two parameters **key** and **class**. The key consists of individual hierarchy tokens connected by a dot. Where body denotes the beginning ROOT.  
-
-```
-class User < OpenStruct; end
-
-client = Elektron.client(auth_conf, options)
-identity = client.service('identity', path_prefix: 'V3')
-
-users = identity.get('users').map_to('body.users' => User)
-```
-
-Under the hood `map_to` calls Class.new(attributes). Sometimes you want to pass more parameters than just the attributes. For this case, `map_to` accepts a block in which you can arbitrarily create the object to be mapped.
-
-```
-class User
-  def initialize(name, attributes); end
-end
-
-client = Elektron.client(auth_conf, options)
-identity = client.service('identity')
-
-users = identity.get('users').map_to('body.users') do |attributes|
-  User.new('user1', attributes)
-end
-```
-
-Or if you want to reuse the mapping
-
-```
-class User
-  def initialize(name, attributes); end
-end
-
-user_map = proc { |attributes| User.new('test_user', attributes) }
-
-client = Elektron.client(auth_conf, options)
-identity = client.service('identity')
-
-users = identity.get('users').map_to('body.users', &user_map)
-```
-
-### Middlewares
-
-The entire request/response process in Elektron is based on middlewares. Middlewares are small applications (apps) that are called in succession. Each middleware has access to all request data and can manipulate it. It can also access the response data in the same way as it passes through all middleware on the way back.
-
-The order of middlewares is important! Because it can be important to change request data or response data before they are passed on to the next app. For this, Elektron manages a stack of classes that implement the middlewares. Each of these classes must offer at least two methods, `initialize` and `call`. If such a class is instantiated, it gets as parameter a reference to the next app in the stack. The `call` method receives the request data as parameter and must return the response. This provides the possibility to manipulate the request data as well as the response data during the execution of the call method. Most of the time you only want to edit data in one direction with a middleware.
-
-Example for a middleware:
-```ruby
-  class NewMiddleware < ::Elektron::Middlewares::Base
-    def initialize(next_middleware = nil)
-      @next_middleware = next_middleware
-    end
-
-    def call(request_data)
-      # add some params to request_data
-      request_data.params['test'] = true
-      # call next app
-      response = @next_middleware.call(request_data)
-      # now we could manipulate the response data
-      # return response
-      response
-    end
-  end
-```
-
-**Request Data** is a container object that responds to the following getter and setter methods:
-* `service_name`, the name of current service
-* `token`
-* `service_url`, url to be used for request
-* `project_id`, project id from token context
-* `http_method`, to be used for request
-* `path`
-* `params`, url params
-* `options`, a hash with keys `:headers`, `:interface`, `:region`, `:http_client`, `:debug`
-* `data`, request body
-* `cache`, a reference to a variable that is kept in the service. It is used to store values across all requests
-
-**Response** is a container object that responds to the following getter and setter methods:
-* `body`, response body
-* `header`, response headers
-* `service_name`, name of current service
-* `http_method`, method used for request
-* `url`, url used for request
-
-#### Stack
-
-The stack maintains a list of middlewares. It offers a variety of methods that allow you to add new apps, remove or replace existing ones. In particular, this can be used to influence the order of app processing. The order of the middlwares plays an important role, since each app can manipulate the request data before it is passed on to the next app in the stack.
-
-Methods:
-* `add`, requires a name and accepts two options `before` and `after`. Without options it adds a middleware to the top of the stack.
-* `remove`, requires a name
-* `replace`, replaces a middleware with another on the same position.
-* `execute`, runs all middlewares at a time in the given order
-
-**A note about `before` and `after`:**
-Imagine the stack having a top and a bottom (as in the illustration below). The request runs through the stack from top to bottom, the response runs from bottom to top. Adding a middleware `before` another middleware means adding it towards the bottom. Adding a middleware `after` another middleware means adding it towards the top.
-
-![Middleware Stack](docs/elektron_middleware_stack.jpg?raw)
-[Middleware Stack](docs/elektron_middleware_stack.pdf "Elektron Middleware Stack PDF")
-
-A request is started by a service with the topmost app and continues to be passed on to the next lower app until it is finally sent to the API. Since the call method of the middlewares always has to return a response, the bottommost app starts the response and passes it further up through the chain of middlwares.
-
-
-Example:
-```ruby
-
-class PrettyDebug < Elektron::Middlewares::Base
-  def call(request_context)
-    unless request_context.options[:debug]
-      return @next_middleware.call(request_context)
-    end
-    # Green
-    Rails.logger.debug("\033[32m\033[1m################ Elektron: Http Client #############\033[22m")
-    response = @next_middleware.call(request_context)
-    Rails.logger.debug("\033[0m")
-    response
-  end
-end
-
-client = Elektron.client({
-  url: 'https://identity.test.com',
-  user_name: 'test',
-  user_domain_name: 'Default',
-  password: 'devstack',
-  scope_domain_name: 'Default'
-}, { region: 'RegionOne', interface: 'public'})
-
-client.middlewares.add(PrettyDebug, after: HttpRequestPerformer)
-```
-
-#### Default Middlewares
-* `HttpRequestPerformer`, executes the actual HTTP request. This is the innermost middleware.
-* `ResponseErrorHandler`, this middleware follows the `HttpRequestPerformer` and it wraps the API errors into Elektron errors and adds useful information to them.
-* `ResponseHandler`, this middleware follows the `ResponseErrorHandler` and it wraps the response data into a Response object which provides the `map_to` method.
-
+- `body` returns the body as JSON.
+- `header` makes it possible to access response headers.
+- `map_to` maps the response to an object or an array of objects.
 
 ## Contributing
+
 Contributors are welcome and must adhere to the [Contributor covenant code of conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.html).
 
 Please submit issues/bugs and patches on the Elektron repository.
 
 ### Testing
+
 ```
 git clone https://github.com/sapcc/elektron.git
 cd elektron
@@ -442,5 +275,6 @@ bundle exec rspec
 ```
 
 ## License
+
 The gem is available as open source under the terms of the
 Apache License Version 2.0, January 2004 http://www.apache.org/licenses/ - See [LICENSE](APACHE-LICENSE) for details.

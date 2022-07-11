@@ -1,4 +1,5 @@
 import Elektron from "./index.js"
+import { get } from "./Client"
 
 jest.mock("./Client", () => {
   //Mock the default export
@@ -8,12 +9,12 @@ jest.mock("./Client", () => {
     __esModule: true,
 
     get: jest.fn().mockResolvedValue({
-      headers: { get: () => "header" },
-      json: jest.fn().mockResolvedValue({ token: TestTokenData }),
+      headers: { get: () => "TEST_TOKEN" },
+      json: jest.fn().mockResolvedValue({ token: TestTokenData.default }),
     }),
     post: jest.fn().mockResolvedValue({
-      headers: { get: () => "header" },
-      json: jest.fn().mockResolvedValue({ token: TestTokenData }),
+      headers: { get: () => "TEST_TOKEN" },
+      json: jest.fn().mockResolvedValue({ token: TestTokenData.default }),
     }),
   }
 })
@@ -29,16 +30,9 @@ test("Elektron is a function", () => {
 describe("Elektron", () => {
   let elektron
   beforeEach(async () => {
-    elektron = Elektron(
-      "https://identity-3.qa-de-1.cloud.sap/v3",
-      {
-        token: "test",
-      },
-      {
-        headers: { "X-OpenStack-Nova-API-Version": "2.60" },
-        parseResponse: true,
-      }
-    )
+    elektron = Elektron("https://identity-3.qa-de-1.cloud.sap/v3", {
+      token: "test",
+    })
   })
 
   test("responds to service", () => {
@@ -51,5 +45,18 @@ describe("Elektron", () => {
 
   test("service responds to get", () => {
     expect(typeof elektron.service("volumev2").get).toEqual("function")
+  })
+
+  test("Default Options", async () => {
+    await elektron.service("volumev2").get("/volumes", { debug: true })
+    expect(get).toHaveBeenLastCalledWith("/volumes", {
+      headers: {
+        "Content-Type": "application/json",
+        "X-Auth-Token": "TEST_TOKEN",
+      },
+      parseResponse: true,
+      host: "https://volume-3.qa-de-1.cloud.sap:443/v2/e9141fb24eee4b3e9f25ae69cda31132",
+      debug: true,
+    })
   })
 })

@@ -34,7 +34,10 @@ describe("Client methods", () => {
   })
 
   test("head", () => {
-    Client.head("/servers", { host: "http://test.com" })
+    Client.head("/servers", {
+      host: "http://test.com",
+      headers: { "Content-Type": "application/json" },
+    })
     expect(fetch).toHaveBeenCalledWith("http://test.com/servers", {
       headers: { "Content-Type": "application/json" },
       method: "HEAD",
@@ -44,7 +47,7 @@ describe("Client methods", () => {
   test("get", () => {
     Client.get("/servers", { host: "http://test.com" })
     expect(fetch).toHaveBeenCalledWith("http://test.com/servers", {
-      headers: { "Content-Type": "application/json" },
+      headers: {},
       method: "GET",
     })
   })
@@ -52,7 +55,7 @@ describe("Client methods", () => {
   test("post", () => {
     Client.post("/servers", { name: "test" }, { host: "http://test.com" })
     expect(fetch).toHaveBeenCalledWith("http://test.com/servers", {
-      headers: { "Content-Type": "application/json" },
+      headers: {},
       method: "POST",
       body: JSON.stringify({ name: "test" }),
     })
@@ -61,7 +64,7 @@ describe("Client methods", () => {
   test("delete", () => {
     Client.del("/servers/1", { host: "http://test.com" })
     expect(fetch).toHaveBeenCalledWith("http://test.com/servers/1", {
-      headers: { "Content-Type": "application/json" },
+      headers: {},
       method: "DELETE",
     })
   })
@@ -69,7 +72,7 @@ describe("Client methods", () => {
   test("put", () => {
     Client.put("/servers/1", { name: "test" }, { host: "http://test.com" })
     expect(fetch).toHaveBeenLastCalledWith("http://test.com/servers/1", {
-      headers: { "Content-Type": "application/json" },
+      headers: {},
       method: "PUT",
       body: JSON.stringify({ name: "test" }),
     })
@@ -78,7 +81,7 @@ describe("Client methods", () => {
   test("patch", () => {
     Client.patch("/servers/1", { name: "test" }, { host: "http://test.com" })
     expect(fetch).toHaveBeenLastCalledWith("http://test.com/servers/1", {
-      headers: { "Content-Type": "application/json" },
+      headers: {},
       method: "PATCH",
       body: JSON.stringify({ name: "test" }),
     })
@@ -89,7 +92,7 @@ describe("pathPrefix", () => {
   test("should replace path prefix", () => {
     Client.head("/servers", { pathPrefix: "v2", host: "http://test.com/v1" })
     expect(fetch).toHaveBeenLastCalledWith("http://test.com/v2/servers", {
-      headers: { "Content-Type": "application/json" },
+      headers: {},
       method: "HEAD",
     })
   })

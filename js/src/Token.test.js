@@ -49,7 +49,7 @@ describe("Token", () => {
     })
 
     test("serviceURL", () => {
-      expect(token.serviceURL("volumev2")).toEqual(
+      expect(token.serviceURL("volumev2", { interfaceName: "public" })).toEqual(
         "https://volume-3.qa-de-1.cloud.sap:443/v2/e9141fb24eee4b3e9f25ae69cda31132"
       )
     })
@@ -69,9 +69,12 @@ describe("Token", () => {
     })
 
     test("serviceURL for region staging", () => {
-      expect(token.serviceURL("hermes", { region: "staging" })).toEqual(
-        "https://hermes.staging.cloud.sap/v1"
-      )
+      expect(
+        token.serviceURL("hermes", {
+          region: "staging",
+          interfaceName: "public",
+        })
+      ).toEqual("https://hermes.staging.cloud.sap/v1")
     })
 
     test("value", () => {

@@ -1,7 +1,5 @@
 import fetch from "cross-fetch"
 
-const DEFAULT_HEADERS = { "Content-Type": "application/json" }
-
 /**
  * This function checks the response status code and throws an error if code < 200 or code >= 300.
  * @param {promise} response
@@ -54,15 +52,27 @@ const buildURL = function (base, path, pathPrefix) {
 const request = (method, path, options) => {
   const url = buildURL(options.host, path, options.pathPrefix)
   const body = options.body && JSON.stringify(options.body)
-  const parseResponse = options.parseResponse === false ? false : true
+
+  if (options.debug) {
+    console.debug(
+      "Debug: url = ",
+      url,
+      ", headers = ",
+      JSON.stringify({ ...options.headers }, null, 2),
+      ", body = ",
+      body,
+      ", parseResponse = ",
+      options.parseResponse
+    )
+  }
 
   return fetch(url, {
-    headers: { ...DEFAULT_HEADERS, ...options.headers },
+    headers: { ...options.headers },
     method,
     body,
   })
     .then(checkStatus)
-    .then((response) => handleResponse(response, parseResponse))
+    .then((response) => handleResponse(response, options.parseResponse))
 }
 
 /**
