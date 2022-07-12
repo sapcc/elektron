@@ -4,7 +4,7 @@
   "description": "A lightweight openstack client intended for use in browsers.",
   "repository": "https://github.com/sapcc/elektron/tree/master/js",
   "author": "Andreas Pfau <andreas.pfau@sap.com>",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "main": "js/dist/bundle.js",
   "browser": "js/dist/bundle.js",
   "scripts": {

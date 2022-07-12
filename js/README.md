@@ -6,7 +6,7 @@ Elektron is a tiny promise based JS client for OpenStack APIs. It handles the au
 
 - Authentication
 - Session with token context (service catalog, user data, scope) and automatic re-authentication
-- HTTP Methods: GET, POST, PUT, PATCH, DELETE, COPY, HEAD and OPTIONS
+- HTTP Methods: GET, POST, PUT, PATCH, DELETE, HEAD
 - Possibility to set headers on every request
 
 ### What it doesn't offer:
@@ -251,13 +251,43 @@ const manilaService = elektron.service("share", { headers: { "X-OpenStack-Manila
 - `parseResponse: true` (bool) - parse response as json.
 - `debug: true` (bool) - if true then logs debug output to console.
 
-#### Request Response
+#### Response
 
-The response object of the request returns a wrapped net/http response object. It has the following methods:
+The request returns different response objects depending on the `parseResponse` option. Under the hood, Elektron uses fetch. fetch returns a response object containing headers and other methods such as json. If `parseResponse` is set to `true` (default), then elektron automatically calls response.json(), which then returns a Promise object that parses the response as JSON. However, sometimes you want to access the response headers (identity: auth/token). In this case you have to set `parseResponse` to `false`.
 
-- `body` returns the body as JSON.
-- `header` makes it possible to access response headers.
-- `map_to` maps the response to an object or an array of objects.
+Example:
+`parseResponse: false`
+
+```js
+const elektron = Elektron.client("https://identity.test.com", {
+  token: "OS_TOKEN",
+})
+
+elektron
+  .service("identity")
+  .post("/auth/token", { AUTH_OBJECT }, { parseResponse: false })
+  .then(async (response) => {
+    const authToken = response.headers.get("X-Subject-Token")
+    const token = await response.json()
+    return [authToken, token]
+  })
+```
+
+`parseResponse: true` (default)
+
+```js
+const elektron = Elektron.client("https://identity.test.com", {
+  token: "OS_TOKEN",
+})
+
+elektron
+  .service("compute")
+  .get("/servers")
+  .then((servers) => {
+    console.log(servers)
+  })
+  .catch((error) => console.error(error))
+```
 
 ## Contributing
 
@@ -269,12 +299,12 @@ Please submit issues/bugs and patches on the Elektron repository.
 
 ```
 git clone https://github.com/sapcc/elektron.git
-cd elektron
-bundle install
-bundle exec rspec
+cd elektron/js
+yarn install
+yarn test
 ```
 
 ## License
 
-The gem is available as open source under the terms of the
-Apache License Version 2.0, January 2004 http://www.apache.org/licenses/ - See [LICENSE](APACHE-LICENSE) for details.
+The npm is available as open source under the terms of the
+Apache License Version 2.0, January 2004 http://www.apache.org/licenses/ - See [LICENSE](../APACHE-LICENSE) for details.
