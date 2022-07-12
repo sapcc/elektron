@@ -2,5 +2,8 @@
 log/*.log
 pkg/
 vendor/bundle
+js/node_modules
+js/dist
+
 Gemfile.lock
 .DS_Store
