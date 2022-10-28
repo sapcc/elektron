@@ -19,8 +19,8 @@ module Elektron
             data = begin
                      JSON.parse(data)
                    rescue JSON::ParserError => _e
-                     # do nothing
-                     data
+                     # return response message
+                     @response.message || data
                    end
           end
 
