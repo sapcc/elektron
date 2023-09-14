@@ -4,7 +4,7 @@ module Elektron
   module Utils
     module UriHelper
       def to_url(path, params)
-        uri = URI(URI.escape(path))
+        uri = URI(path)
         uri.query = URI.encode_www_form(params) if params && !params.empty?
         uri.to_s
       end
