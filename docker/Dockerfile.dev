@@ -1,4 +1,29 @@
-FROM keppel.eu-de-1.cloud.sap/ccloud-dockerhub-mirror/library/node:17-alpine
+FROM keppel.eu-de-1.cloud.sap/ccloud-dockerhub-mirror/library/ruby:3.2.2-alpine3.17
 
 LABEL source_repository="https://github.com/sapcc/elektron"
 
+RUN apk --no-cache add --update \
+  git \
+  curl \
+  build-base \
+  --virtual .builddeps \
+  openssh \
+  yarn \
+  bash \
+  unzip \
+  jq \
+  the_silver_searcher \
+  vim \
+  shared-mime-info \
+  python3 \
+  py3-pip\
+  ca-certificates \
+  gcc \
+  libffi-dev \
+  python3-dev \
+  musl-dev \
+  openssl-dev \
+  g++ libxml2-dev \
+  libxslt-dev \
+  libjpeg-turbo-dev \
+  zlib-dev 

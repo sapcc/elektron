@@ -1,4 +1,5 @@
 require_relative './base'
+require 'forwardable'
 
 module Elektron
   module Middlewares
