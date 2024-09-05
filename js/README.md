@@ -24,12 +24,6 @@ npm
 $ npm install sapcc-elektron
 ```
 
-yarn
-
-```bash
-yarn add sapcc-elektron
-```
-
 ## Usage
 
 ### Quick start
@@ -300,8 +294,8 @@ Please submit issues/bugs and patches on the Elektron repository.
 ```
 git clone https://github.com/sapcc/elektron.git
 cd elektron/js
-yarn install
-yarn test
+npm install
+npm test
 ```
 
 ## License
