@@ -24,6 +24,9 @@ module Elektron
           request_context.options[:headers] ||= {}
           request_context.options[:headers]['X-Auth-Token'] = @auth_conf[:token]
           request_context.options[:headers]['X-Subject-Token'] = @auth_conf[:token]
+        elsif (@auth_conf[:application_credential])
+          request_context.http_method = :post
+          request_context.data = application_credential(@auth_conf[:application_credential])
         else
           request_context.http_method = :post
           request_context.data = credentials
@@ -80,6 +83,16 @@ module Elektron
           @scope = 'unscoped'
         end
         @scope
+      end
+
+      def application_credential(app_cred)
+        auth = {
+          'identity' =>  {
+            'methods' => ['application_credential'],
+            'application_credential' => app_cred
+          }
+        }
+        { 'auth' => auth }
       end
 
       def credentials
