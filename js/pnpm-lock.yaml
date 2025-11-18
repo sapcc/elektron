@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       cross-fetch:
-        specifier: ^3.1.5
+        specifier: ^3.2.0
         version: 3.2.0
     devDependencies:
       '@babel/core':
