@@ -9,18 +9,25 @@
   "browser": "js/dist/bundle.js",
   "scripts": {
     "test": "jest --watchAll",
-    "build": "rollup ./src/index.js --file ./dist/bundle.js --format umd --name elektron --compact --plugin rollup-plugin-terser"
+    "build": "rollup ./src/index.js --file ./dist/bundle.js --format umd --name elektron --compact --plugin @rollup/plugin-terser"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
+    "@rollup/plugin-terser": "^1.0.0",
     "babel-jest": "^30.0.4",
     "jest": "^30.0.4",
     "jest-fetch-mock": "^3.0.3",
-    "rollup": "^4.44.1",
-    "rollup-plugin-terser": "^7.0.2"
+    "rollup": "^4.59.0"
   },
   "dependencies": {
     "cross-fetch": "^3.1.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "minimatch": ">=9.0.7",
+      "glob": ">=10.5.0",
+      "picomatch": ">=4.0.2"
+    }
   }
 }
