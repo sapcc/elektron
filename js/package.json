@@ -12,11 +12,11 @@
     "build": "rollup ./src/index.js --file ./dist/bundle.js --format umd --name elektron --compact --plugin @rollup/plugin-terser"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.0",
-    "@babel/preset-env": "^7.28.0",
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
     "@rollup/plugin-terser": "^1.0.0",
-    "babel-jest": "^30.0.4",
-    "jest": "^30.0.4",
+    "babel-jest": "^30.4.1",
+    "jest": "^30.4.2",
     "jest-fetch-mock": "^3.0.3",
     "rollup": "^4.59.0"
   },
