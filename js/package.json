@@ -17,7 +17,7 @@
     "@rollup/plugin-terser": "^1.0.0",
     "babel-jest": "^30.4.1",
     "jest": "^30.4.2",
-    "jest-fetch-mock": "^3.0.3",
+    "jest-fetch-mock": "^4.0.0",
     "rollup": "^4.59.0"
   },
   "dependencies": {
